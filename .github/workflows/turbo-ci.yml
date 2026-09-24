@@ -116,8 +116,9 @@ jobs:
       - name: Lint and test
         run: pnpm turbo run lint test --continue --filter=@modrinth/app... --filter=@modrinth/app-frontend... --filter=@modrinth/app-lib... --filter='!@modrinth/blog'
 
+      # The upstream `i18n-icu-contract prune-local` check is left out: it syncs
+      # with Modrinth's Crowdin project and reads the removed website's catalogs.
       - name: Verify intl:extract has been run
         run: |
           pnpm turbo run intl:extract --force
-          pnpm scripts i18n-icu-contract prune-local --check
           git diff --exit-code --color */*/src/locales/*/index.json
