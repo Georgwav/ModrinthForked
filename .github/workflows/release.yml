@@ -165,7 +165,7 @@ jobs:
         if: env.WINGET_TOKEN != ''
         uses: vedantmgoyal9/winget-releaser@v2
         with:
-          identifier: Georgwav.Threadrinth
+          identifier: Threadrinth.Threadrinth
           installers-regex: '_x64-setup\.exe$'
           release-tag: v${{ needs.version.outputs.version }}
           token: ${{ secrets.WINGET_TOKEN }}
