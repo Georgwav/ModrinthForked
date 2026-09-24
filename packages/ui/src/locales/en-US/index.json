@@ -5885,17 +5885,29 @@
   "settings.display.sidebar.right-aligned-filters-sidebar.title": {
     "defaultMessage": "Right-aligned filters sidebar on search pages"
   },
+  "settings.display.theme.amethyst": {
+    "defaultMessage": "Amethyst"
+  },
+  "settings.display.theme.blossom": {
+    "defaultMessage": "Blossom"
+  },
   "settings.display.theme.dark": {
     "defaultMessage": "Dark"
   },
   "settings.display.theme.description": {
     "defaultMessage": "Select your preferred color theme across Modrinth."
   },
+  "settings.display.theme.ember": {
+    "defaultMessage": "Ember"
+  },
   "settings.display.theme.light": {
     "defaultMessage": "Light"
   },
   "settings.display.theme.oled": {
     "defaultMessage": "OLED"
+  },
+  "settings.display.theme.orchid": {
+    "defaultMessage": "Orchid"
   },
   "settings.display.theme.preferred-dark-theme": {
     "defaultMessage": "Preferred dark theme"
@@ -5905,6 +5917,9 @@
   },
   "settings.display.theme.retro": {
     "defaultMessage": "Retro"
+  },
+  "settings.display.theme.sand": {
+    "defaultMessage": "Sand"
   },
   "settings.display.theme.sync-across-devices": {
     "defaultMessage": "Sync theme across devices"

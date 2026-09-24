@@ -5,12 +5,26 @@ export const DEFAULT_ACCENT_HUE = 30
 
 const ACCENT_HUE_KEY = 'threadrinth-accent-hue'
 
+/** Stored instead of a hue for the white accent. */
+const WHITE = 'white'
+
 /** Lightness of the accent in dark and light themes; must match `accent.scss`. */
 const DARK_THEME_ACCENT = { saturation: 1, lightness: 0.62 }
 const LIGHT_THEME_ACCENT = { saturation: 1, lightness: 0.44 }
+/** White on dark themes; a near-black graphite on light ones, where white would vanish. */
+const DARK_THEME_WHITE = { saturation: 0, lightness: 0.92 }
+const LIGHT_THEME_WHITE = { saturation: 0, lightness: 0.22 }
 
 function normalizeHue(value: number): number {
 	return ((Math.round(value) % 360) + 360) % 360
+}
+
+function loadWhite(): boolean {
+	try {
+		return window.localStorage.getItem(ACCENT_HUE_KEY) === WHITE
+	} catch {
+		return false
+	}
 }
 
 function loadHue(): number {
@@ -61,24 +75,32 @@ function contrastText(hue: number, accent: { saturation: number; lightness: numb
 	return onBlack >= onWhite ? '#000000' : '#ffffff'
 }
 
-function applyHue(hue: number) {
+function applyAccent(hue: number, white: boolean) {
 	const style = document.documentElement.style
+	const dark = white ? DARK_THEME_WHITE : DARK_THEME_ACCENT
+	const light = white ? LIGHT_THEME_WHITE : LIGHT_THEME_ACCENT
 	style.setProperty('--th-accent-hue', String(hue))
-	style.setProperty('--th-accent-contrast-dark', contrastText(hue, DARK_THEME_ACCENT))
-	style.setProperty('--th-accent-contrast-light', contrastText(hue, LIGHT_THEME_ACCENT))
+	style.setProperty('--th-accent-sat', String(dark.saturation))
+	style.setProperty('--th-accent-l-dark', `${dark.lightness * 100}%`)
+	style.setProperty('--th-accent-l-light', `${light.lightness * 100}%`)
+	style.setProperty('--th-accent-contrast-dark', contrastText(hue, dark))
+	style.setProperty('--th-accent-contrast-light', contrastText(hue, light))
 }
 
 const hue = ref(loadHue())
+const white = ref(loadWhite())
 
 watch(
-	hue,
-	(value) => {
-		applyHue(value)
+	[hue, white],
+	([hueValue, whiteValue]) => {
+		applyAccent(hueValue, whiteValue)
 		try {
-			if (value === DEFAULT_ACCENT_HUE) {
+			if (whiteValue) {
+				window.localStorage.setItem(ACCENT_HUE_KEY, WHITE)
+			} else if (hueValue === DEFAULT_ACCENT_HUE) {
 				window.localStorage.removeItem(ACCENT_HUE_KEY)
 			} else {
-				window.localStorage.setItem(ACCENT_HUE_KEY, String(value))
+				window.localStorage.setItem(ACCENT_HUE_KEY, String(hueValue))
 			}
 		} catch {
 			// storage blocked or full
@@ -89,10 +111,16 @@ watch(
 
 const accentColor = reactive({
 	hue,
+	white,
 	set(value: number) {
+		white.value = false
 		hue.value = normalizeHue(value)
 	},
+	setWhite() {
+		white.value = true
+	},
 	reset() {
+		white.value = false
 		hue.value = DEFAULT_ACCENT_HUE
 	},
 })

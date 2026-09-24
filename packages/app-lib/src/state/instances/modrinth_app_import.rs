@@ -33,11 +33,19 @@ fn candidate_databases() -> Vec<PathBuf> {
     candidates
 }
 
+/// An instance as the official Modrinth App knows it.
+#[derive(Clone, Debug)]
+pub(crate) struct ModrinthAppInstance {
+    pub cfg: InstanceCfg,
+    /// The instance's icon in the Modrinth App's cache, if it has one.
+    pub icon: Option<PathBuf>,
+}
+
 /// Instances known to the official Modrinth App, by folder name. Returns an
 /// empty map when there is no Modrinth App install or it can't be read.
 pub(crate) async fn load_modrinth_app_instances(
     own_database: &Path,
-) -> HashMap<String, InstanceCfg> {
+) -> HashMap<String, ModrinthAppInstance> {
     let own_database = dunce::canonicalize(own_database)
         .unwrap_or_else(|_| own_database.to_path_buf());
     let mut instances = HashMap::new();
@@ -56,8 +64,15 @@ pub(crate) async fn load_modrinth_app_instances(
                     found.len(),
                     database.display()
                 );
-                for (path, cfg) in found {
-                    instances.entry(path).or_insert(cfg);
+                let app_dir = database.parent().unwrap_or(Path::new(""));
+                for (path, mut instance) in found {
+                    // Icons are stored as absolute paths; resolve relative
+                    // ones against the Modrinth App's folder just in case.
+                    instance.icon = instance
+                        .icon
+                        .map(|icon| app_dir.join(icon))
+                        .filter(|icon| icon.is_file());
+                    instances.entry(path).or_insert(instance);
                 }
             }
             Err(error) => tracing::warn!(
@@ -72,7 +87,7 @@ pub(crate) async fn load_modrinth_app_instances(
 
 async fn read_database_copy(
     database: &Path,
-) -> crate::Result<HashMap<String, InstanceCfg>> {
+) -> crate::Result<HashMap<String, ModrinthAppInstance>> {
     let copy_dir =
         tempfile::tempdir().map_err(crate::util::io::IOError::from)?;
     let copy = copy_dir.path().join("app.db");
@@ -101,9 +116,9 @@ async fn read_database_copy(
 /// Modrinth App 0.21 and newer: `instances` + `instance_content_sets`.
 pub(crate) async fn read_instances(
     pool: &SqlitePool,
-) -> crate::Result<HashMap<String, InstanceCfg>> {
+) -> crate::Result<HashMap<String, ModrinthAppInstance>> {
     let rows = sqlx::query(
-        "SELECT i.path, i.name, i.created, i.last_played,
+        "SELECT i.path, i.name, i.icon_path, i.created, i.last_played,
 			i.submitted_time_played, i.recent_time_played,
 			cs.game_version, cs.loader, cs.loader_version,
 			l.link_kind, l.modrinth_project_id, l.modrinth_version_id
@@ -136,7 +151,7 @@ pub(crate) async fn read_instances(
                 }
                 _ => None,
             };
-            to_cfg(&row, "loader", "loader_version", link)
+            to_instance(&row, "loader", "loader_version", link)
         })
         .collect())
 }
@@ -144,9 +159,9 @@ pub(crate) async fn read_instances(
 /// Modrinth App before 0.21: a single `profiles` table.
 pub(crate) async fn read_legacy_profiles(
     pool: &SqlitePool,
-) -> crate::Result<HashMap<String, InstanceCfg>> {
+) -> crate::Result<HashMap<String, ModrinthAppInstance>> {
     let rows = sqlx::query(
-        "SELECT path, name, created, last_played, submitted_time_played,
+        "SELECT path, name, icon_path, created, last_played, submitted_time_played,
 			recent_time_played, game_version, mod_loader, mod_loader_version,
 			linked_project_id, linked_version_id
 		FROM profiles",
@@ -175,17 +190,17 @@ pub(crate) async fn read_legacy_profiles(
                 }
                 _ => None,
             };
-            to_cfg(&row, "mod_loader", "mod_loader_version", link)
+            to_instance(&row, "mod_loader", "mod_loader_version", link)
         })
         .collect())
 }
 
-fn to_cfg(
+fn to_instance(
     row: &sqlx::sqlite::SqliteRow,
     loader_column: &str,
     loader_version_column: &str,
     link: Option<InstanceLink>,
-) -> Option<(String, InstanceCfg)> {
+) -> Option<(String, ModrinthAppInstance)> {
     let path: String = row.try_get("path").ok()?;
     let game_version: String = row.try_get("game_version").ok()?;
     if path.is_empty() || game_version.is_empty() {
@@ -202,31 +217,36 @@ fn to_cfg(
             .unwrap_or(0)
     };
 
-    Some((
-        path.clone(),
-        InstanceCfg {
-            id: None,
-            name: row.try_get("name").unwrap_or(path),
-            game_version,
-            loader: row
-                .try_get::<String, _>(loader_column)
-                .ok()
-                .as_deref()
-                .and_then(parse_loader)
-                .unwrap_or(crate::state::ModLoader::Vanilla),
-            loader_version: row
-                .try_get::<Option<String>, _>(loader_version_column)
-                .ok()
-                .flatten()
-                .filter(|value| !value.is_empty()),
-            created: timestamp("created"),
-            modified: None,
-            last_played: timestamp("last_played"),
-            submitted_time_played: playtime("submitted_time_played"),
-            recent_time_played: playtime("recent_time_played"),
-            link,
-        },
-    ))
+    let icon = row
+        .try_get::<Option<String>, _>("icon_path")
+        .ok()
+        .flatten()
+        .filter(|icon| !icon.is_empty())
+        .map(PathBuf::from);
+
+    let cfg = InstanceCfg {
+        id: None,
+        name: row.try_get("name").unwrap_or_else(|_| path.clone()),
+        game_version,
+        loader: row
+            .try_get::<String, _>(loader_column)
+            .ok()
+            .as_deref()
+            .and_then(parse_loader)
+            .unwrap_or(crate::state::ModLoader::Vanilla),
+        loader_version: row
+            .try_get::<Option<String>, _>(loader_version_column)
+            .ok()
+            .flatten()
+            .filter(|value| !value.is_empty()),
+        created: timestamp("created"),
+        modified: None,
+        last_played: timestamp("last_played"),
+        submitted_time_played: playtime("submitted_time_played"),
+        recent_time_played: playtime("recent_time_played"),
+        link,
+    };
+    Some((path, ModrinthAppInstance { cfg, icon }))
 }
 
 #[cfg(test)]
@@ -247,8 +267,8 @@ mod tests {
         let pool = memory_pool().await;
         sqlx::migrate!().run(&pool).await.unwrap();
         sqlx::query(
-            "INSERT INTO instances (id, path, applied_content_set_id, install_stage, launcher_feature_version, name, created, modified, last_played, submitted_time_played)
-			VALUES ('local:a', 'Horror OneBlock', 'cs:a', 'installed', 'none', 'Horror OneBlock', 1700000000, 1700000000, 1700000500, 7200)",
+            "INSERT INTO instances (id, path, applied_content_set_id, install_stage, launcher_feature_version, name, icon_path, created, modified, last_played, submitted_time_played)
+			VALUES ('local:a', 'Horror OneBlock', 'cs:a', 'installed', 'none', 'Horror OneBlock', '/icons/horror.png', 1700000000, 1700000000, 1700000500, 7200)",
         )
         .execute(&pool)
         .await
@@ -269,7 +289,12 @@ mod tests {
         .unwrap();
 
         let found = read_instances(&pool).await.unwrap();
-        let cfg = &found["Horror OneBlock"];
+        let found_instance = &found["Horror OneBlock"];
+        assert_eq!(
+            found_instance.icon.as_deref(),
+            Some(Path::new("/icons/horror.png"))
+        );
+        let cfg = &found_instance.cfg;
         assert_eq!(cfg.game_version, "26.1.2");
         assert_eq!(cfg.loader, ModLoader::Fabric);
         assert_eq!(cfg.loader_version.as_deref(), Some("0.17.2"));
@@ -285,20 +310,20 @@ mod tests {
     async fn reads_legacy_profiles_table() {
         let pool = memory_pool().await;
         sqlx::query(
-            "CREATE TABLE profiles (path TEXT, name TEXT, created INTEGER, last_played INTEGER, submitted_time_played INTEGER, recent_time_played INTEGER, game_version TEXT, mod_loader TEXT, mod_loader_version TEXT, linked_project_id TEXT, linked_version_id TEXT)",
+            "CREATE TABLE profiles (path TEXT, name TEXT, icon_path TEXT, created INTEGER, last_played INTEGER, submitted_time_played INTEGER, recent_time_played INTEGER, game_version TEXT, mod_loader TEXT, mod_loader_version TEXT, linked_project_id TEXT, linked_version_id TEXT)",
         )
         .execute(&pool)
         .await
         .unwrap();
         sqlx::query(
-            "INSERT INTO profiles VALUES ('Sodium Plus', 'Sodium Plus', 1700000000, NULL, 60, 5, '1.21.11', 'neoforge', '21.11.3', NULL, NULL)",
+            "INSERT INTO profiles VALUES ('Sodium Plus', 'Sodium Plus', NULL, 1700000000, NULL, 60, 5, '1.21.11', 'neoforge', '21.11.3', NULL, NULL)",
         )
         .execute(&pool)
         .await
         .unwrap();
 
         let found = read_legacy_profiles(&pool).await.unwrap();
-        let cfg = &found["Sodium Plus"];
+        let cfg = &found["Sodium Plus"].cfg;
         assert_eq!(cfg.game_version, "1.21.11");
         assert_eq!(cfg.loader, ModLoader::NeoForge);
         assert_eq!(cfg.loader_version.as_deref(), Some("21.11.3"));

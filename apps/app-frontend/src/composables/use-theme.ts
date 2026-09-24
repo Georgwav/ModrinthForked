@@ -1,8 +1,19 @@
 import { prepareThemeColorTransition } from '@modrinth/ui'
 import { computed, reactive, ref, watch } from 'vue'
 
-export const THEME_OPTIONS = ['dark', 'light', 'oled', 'retro', 'system'] as const
-export const DARK_THEMES = ['dark', 'oled', 'retro'] as const
+export const THEME_OPTIONS = [
+	'dark',
+	'light',
+	'oled',
+	'ember',
+	'sand',
+	'orchid',
+	'amethyst',
+	'blossom',
+	'retro',
+	'system',
+] as const
+export const DARK_THEMES = ['dark', 'oled', 'ember', 'orchid', 'amethyst', 'retro'] as const
 
 export type ColorTheme = (typeof THEME_OPTIONS)[number]
 export type DarkTheme = (typeof DARK_THEMES)[number]
@@ -14,6 +25,29 @@ const PREFERRED_DARK_THEME_KEY = 'modrinth-preferred-dark-theme'
 
 export function isDarkTheme(theme: string): theme is DarkTheme {
 	return (DARK_THEMES as readonly string[]).includes(theme)
+}
+
+/** Threadrinth's themes (`themes.scss`) are variants of Modrinth's dark or light theme. */
+const THEME_BASES = {
+	ember: 'dark',
+	sand: 'light',
+	orchid: 'dark',
+	amethyst: 'dark',
+	blossom: 'light',
+} as const
+
+type ThreadrinthTheme = keyof typeof THEME_BASES
+
+/**
+ * The Modrinth theme a theme is based on, for places outside this app that only
+ * know Modrinth's themes, like the appearance synced to a Modrinth account.
+ */
+export function baseTheme<T extends ColorTheme>(
+	theme: T,
+): Exclude<T, ThreadrinthTheme> | 'dark' | 'light' {
+	return theme in THEME_BASES
+		? THEME_BASES[theme as ThreadrinthTheme]
+		: (theme as Exclude<T, ThreadrinthTheme>)
 }
 
 function loadPreferredTheme(): ColorTheme {
@@ -106,7 +140,7 @@ watch(
 		for (const option of THEME_OPTIONS) {
 			html.classList.remove(`${option}-mode`)
 		}
-		html.classList.add(`${theme}-mode`)
+		html.classList.add(`${baseTheme(theme)}-mode`, `${theme}-mode`)
 	},
 	{ immediate: true },
 )

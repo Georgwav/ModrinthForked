@@ -111,7 +111,7 @@ import { useAppSettings } from '@/composables/use-app-settings.ts'
 import { useError } from '@/composables/use-error.js'
 import { useInstanceMetadataRefresh } from '@/composables/use-instance-metadata-refresh'
 import { useQuickInstanceLimit } from '@/composables/use-quick-instance-limit.ts'
-import { isDarkTheme, useTheme } from '@/composables/use-theme.ts'
+import { baseTheme, isDarkTheme, useTheme } from '@/composables/use-theme.ts'
 import { config } from '@/config'
 import { getAccountAppearance, rememberAccountAppearance } from '@/helpers/account-appearance.ts'
 import {
@@ -1253,14 +1253,15 @@ watch(
 				const behavior = preferences.behavior
 				let settingsChanged = false
 
-				if (appTheme.syncAcrossDevices && appTheme.preferred !== selectedTheme) {
+				// A Threadrinth theme based on the synced Modrinth theme is kept.
+				if (appTheme.syncAcrossDevices && baseTheme(appTheme.preferred) !== selectedTheme) {
 					appTheme.preferred = selectedTheme
 				}
 				if (i18n.global.locale.value !== locale) {
 					await setLocale(locale)
 				}
 
-				if (appTheme.syncAcrossDevices && settings.theme !== selectedTheme) {
+				if (appTheme.syncAcrossDevices && baseTheme(settings.theme) !== selectedTheme) {
 					settings.theme = selectedTheme
 					settingsChanged = true
 				}

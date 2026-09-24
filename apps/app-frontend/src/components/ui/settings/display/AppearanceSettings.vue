@@ -11,7 +11,7 @@ import { computed, inject, onBeforeUnmount, onMounted, watch } from 'vue'
 
 import AccentColorSetting from '@/components/ui/settings/display/AccentColorSetting.vue'
 import { useAppSettings } from '@/composables/use-app-settings.ts'
-import { type ColorTheme, isDarkTheme, useTheme } from '@/composables/use-theme.ts'
+import { baseTheme, type ColorTheme, isDarkTheme, useTheme } from '@/composables/use-theme.ts'
 import { type AppSettings, get, set } from '@/helpers/settings.ts'
 import { appSettingsModalContextKey } from '@/providers/app-settings-modal'
 
@@ -48,7 +48,10 @@ const { saved, current, changes, saving, hasChanges, reset, save } = useSavable(
 			(appearanceChanges.theme !== undefined || appearanceChanges.syncAcrossDevices !== undefined)
 		) {
 			await updatePreferences({
-				appearance: value.theme === 'system' ? { auto: true } : { auto: false, theme: value.theme },
+				appearance:
+					value.theme === 'system'
+						? { auto: true }
+						: { auto: false, theme: baseTheme(value.theme) },
 			})
 		}
 
