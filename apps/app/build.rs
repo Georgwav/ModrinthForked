@@ -465,6 +465,14 @@ fn main() {
                     .default_permission(
                         DefaultPermissionRule::AllowAllCommands,
                     ),
+            )
+            .plugin(
+                "threadrinth",
+                InlinedPlugin::new()
+                    .commands(&["transfer_world", "export_server_pack"])
+                    .default_permission(
+                        DefaultPermissionRule::AllowAllCommands,
+                    ),
             ),
     )
     .expect("Failed to run tauri-build");

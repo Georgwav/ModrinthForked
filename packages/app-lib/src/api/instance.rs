@@ -2,6 +2,8 @@
 
 mod content;
 mod export_mrpack;
+mod server_pack;
+pub use self::server_pack::{ServerPackReport, export_server_pack};
 mod files;
 pub use files::{
     InstanceFileItem, create_instance_directory, delete_instance_file,

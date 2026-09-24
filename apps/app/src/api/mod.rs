@@ -31,6 +31,8 @@ pub mod files;
 pub mod friends;
 pub mod worlds;
 
+pub mod threadrinth;
+
 mod oauth_utils;
 
 pub type Result<T> = std::result::Result<T, TheseusSerializableError>;

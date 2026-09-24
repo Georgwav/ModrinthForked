@@ -739,7 +739,9 @@ fn get_world_dir(instance: &Path, world: &str) -> PathBuf {
     instance.join("saves").join(world)
 }
 
-async fn get_world_session_lock(world: &Path) -> Result<tokio::fs::File> {
+pub(crate) async fn get_world_session_lock(
+    world: &Path,
+) -> Result<tokio::fs::File> {
     let lock_path = world.join("session.lock");
     let mut file = tokio::fs::File::options()
         .create(true)

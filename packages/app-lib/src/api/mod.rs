@@ -17,6 +17,7 @@ pub mod server_address;
 pub mod settings;
 pub mod tags;
 pub mod users;
+pub mod world_transfer;
 pub mod worlds;
 
 pub mod data {

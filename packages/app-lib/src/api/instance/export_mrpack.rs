@@ -517,7 +517,7 @@ fn logical_content_path(
     }
 }
 
-async fn export_content(
+pub(super) async fn export_content(
     state: &State,
     file: Option<&crate::state::InstanceFile>,
     path: &Path,
