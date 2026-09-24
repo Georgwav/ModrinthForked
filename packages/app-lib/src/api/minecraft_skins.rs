@@ -16,6 +16,8 @@
 //!    equipped skin.
 //! 5. Before changing a skin, the current non-default Mojang skin is preserved
 //!    locally so switching away from an external skin does not lose it.
+//!    Threadrinth also preserves it whenever the skin list is loaded, so skins
+//!    changed outside the app build up a skin history.
 //! 6. After a Mojang change, the returned profile is saved in memory when
 //!    possible. If that response cannot be read, or a later step fails, the
 //!    backend asks Mojang for the profile again.
@@ -344,6 +346,18 @@ pub async fn get_available_skins() -> crate::Result<Vec<Skin>> {
     let pending_skin = pending_skin_change
         .as_ref()
         .and_then(PendingEffectiveSkinChange::skin);
+
+    // Skin history: a skin set outside the app (for example on minecraft.net)
+    // is saved as soon as the app sees it, not only when switching skins here,
+    // so every skin worn since installing stays in the library.
+    if pending_skin_change.is_none()
+        && let Some(profile) = &online_profile
+        && let Err(error) = preserve_current_profile_skin(&state, profile).await
+    {
+        tracing::warn!(
+            "Could not save the current skin to the library: {error}"
+        );
+    }
 
     let fallback_default_skin = get_fallback_default_skin()?;
     let current_skin_texture_key = pending_skin.as_ref().map_or_else(
