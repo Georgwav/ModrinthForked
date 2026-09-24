@@ -95,3 +95,11 @@ html,
 	--loading-bar-gradient: linear-gradient(to right, var(--color-brand) 0%, #1ffa9a 100%) !important;
 	--splash-tint-top: rgba(66, 131, 92, 0.275) !important;
 }
+
+// Modrinth's brand color is green, so upstream colors its primary buttons
+// (Play, Install, Save, ...) `green` rather than `brand`. Those follow the
+// accent too. The button sets `--button-color` inline, which a stylesheet
+// declaration can only override with `!important`.
+[data-button][style*='--color-green)'] {
+	--button-color: var(--color-brand) !important;
+}
