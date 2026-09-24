@@ -106,9 +106,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # The production API, like releases: the end-to-end test looks up real
+      # mods (e.g. Sodium), which the staging API doesn't have.
       - name: Set app environment
         working-directory: packages/app-lib
-        run: cp .env.staging .env
+        run: cp .env.prod .env
 
       # Threadrinth only ships the launcher, so the backend and its test
       # services (Postgres, ClickHouse, Elasticsearch, ...) are skipped. The
