@@ -12,8 +12,8 @@ C = 256.0
 THREAD = ("#FFC25C", "#FF8A3D")  # amber gradient, top-left to bottom-right
 # The in-app logo follows the accent color: the same two shades, derived from
 # the accent hue (amber is hue 30: #FFC25C and #FF8A3D).
-ACCENT_LIGHT = "hsl(calc(var(--th-accent-hue, 30) + 8) 100% 68%)"
-ACCENT_DEEP = "hsl(calc(var(--th-accent-hue, 30) - 6) 100% 62%)"
+ACCENT_LIGHT = "var(--th-logo-light, hsl(38 100% 68%))"
+ACCENT_DEEP = "var(--th-logo-deep, hsl(24 100% 62%))"
 WALL = "#343E4C"
 
 

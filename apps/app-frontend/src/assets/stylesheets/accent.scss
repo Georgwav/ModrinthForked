@@ -2,81 +2,130 @@
 //
 // Every brand color is derived from a single hue, `--th-accent-hue`, which
 // `use-accent-color.ts` sets on <html> from the user's choice (amber by
-// default). The declarations are `!important` so they also win over the
+// default). The white accent sets `--th-accent-sat` to 0 and moves the accent
+// lightness (`--th-accent-l-dark`/`--th-accent-l-light`) so it stays visible
+// on light themes too. The declarations are `!important` so they also win over the
 // copies of the theme variables that components make with `@extend` (e.g. the
 // theme previews in the appearance settings). Green stays the "success" color;
 // only the brand color changes. The retro theme keeps its own palette.
 
 :root {
 	--th-accent-hue: 30;
+	--th-accent-sat: 1;
+	--th-accent-l-dark: 62%;
+	--th-accent-l-light: 44%;
+	// The logo's thread gradient (`ThreadrinthMark.vue`); near-white for the
+	// white accent.
+	--th-logo-light: hsl(
+		calc(var(--th-accent-hue) + 8) calc(100% * var(--th-accent-sat))
+			calc(98% - 30% * var(--th-accent-sat))
+	);
+	--th-logo-deep: hsl(
+		calc(var(--th-accent-hue) - 6) calc(100% * var(--th-accent-sat))
+			calc(88% - 26% * var(--th-accent-sat))
+	);
 }
 
 html,
 .light-mode {
-	--color-brand: hsl(var(--th-accent-hue) 100% 44%) !important;
-	--color-brand-highlight: hsl(var(--th-accent-hue) 100% 44% / 0.25) !important;
-	--color-brand-shadow: hsl(var(--th-accent-hue) 100% 44% / 0.7) !important;
+	--color-brand: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) var(--th-accent-l-light)
+	) !important;
+	--color-brand-highlight: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) var(--th-accent-l-light) / 0.25
+	) !important;
+	--color-brand-shadow: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) var(--th-accent-l-light) / 0.7
+	) !important;
 	--color-accent-contrast: var(--th-accent-contrast-light, #000000) !important;
 	--loading-bar-gradient: linear-gradient(
 		to right,
 		var(--color-brand) 0%,
-		hsl(var(--th-accent-hue) 100% 34%) 100%
+		hsl(var(--th-accent-hue) calc(100% * var(--th-accent-sat)) 34%) 100%
 	) !important;
 	--brand-gradient-bg: linear-gradient(
 		0deg,
-		hsl(var(--th-accent-hue) 46% 49% / 0.175) 0%,
-		hsl(var(--th-accent-hue) 95% 60% / 0.125) 100%
+		hsl(var(--th-accent-hue) calc(46% * var(--th-accent-sat)) 49% / 0.175) 0%,
+		hsl(var(--th-accent-hue) calc(95% * var(--th-accent-sat)) 60% / 0.125) 100%
 	) !important;
 	--brand-gradient-strong-bg: linear-gradient(
 		270deg,
-		hsl(var(--th-accent-hue) 46% 49% / 0.175) 0%,
-		hsl(var(--th-accent-hue) 77% 51% / 0.12) 100%
+		hsl(var(--th-accent-hue) calc(46% * var(--th-accent-sat)) 49% / 0.175) 0%,
+		hsl(var(--th-accent-hue) calc(77% * var(--th-accent-sat)) 51% / 0.12) 100%
 	) !important;
-	--brand-gradient-border: hsl(var(--th-accent-hue) 33% 19% / 0.15) !important;
+	--brand-gradient-border: hsl(
+		var(--th-accent-hue) calc(33% * var(--th-accent-sat)) 19% / 0.15
+	) !important;
 	--brand-gradient-fade-out-color: linear-gradient(
 		to bottom,
-		hsl(var(--th-accent-hue) 40% 88% / 0),
-		hsl(var(--th-accent-hue) 40% 87%) 70%
+		hsl(var(--th-accent-hue) calc(40% * var(--th-accent-sat)) 88% / 0),
+		hsl(var(--th-accent-hue) calc(40% * var(--th-accent-sat)) 87%) 70%
 	) !important;
-	--splash-tint-top: hsl(var(--th-accent-hue) 100% 86% / 0.465) !important;
-	--splash-overlay: hsl(var(--th-accent-hue) 100% 85% / 0.315) !important;
+	--splash-tint-top: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) 86% / 0.465
+	) !important;
+	--splash-overlay: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) 85% / 0.315
+	) !important;
+}
+
+// On light themes the white accent's logo is graphite, like the accent.
+.light-mode {
+	--th-logo-light: hsl(
+		calc(var(--th-accent-hue) + 8) calc(100% * var(--th-accent-sat))
+			calc(22% + 46% * var(--th-accent-sat))
+	);
+	--th-logo-deep: hsl(
+		calc(var(--th-accent-hue) - 6) calc(100% * var(--th-accent-sat))
+			calc(14% + 48% * var(--th-accent-sat))
+	);
 }
 
 .dark-mode,
 .oled-mode {
-	--color-brand: hsl(var(--th-accent-hue) 100% 62%) !important;
-	--color-brand-highlight: hsl(var(--th-accent-hue) 100% 62% / 0.25) !important;
-	--color-brand-shadow: hsl(var(--th-accent-hue) 100% 62% / 0.7) !important;
+	--color-brand: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) var(--th-accent-l-dark)
+	) !important;
+	--color-brand-highlight: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) var(--th-accent-l-dark) / 0.25
+	) !important;
+	--color-brand-shadow: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) var(--th-accent-l-dark) / 0.7
+	) !important;
 	--color-accent-contrast: var(--th-accent-contrast-dark, #000000) !important;
 	--loading-bar-gradient: linear-gradient(
 		to right,
 		var(--color-brand) 0%,
-		hsl(var(--th-accent-hue) 100% 72%) 100%
+		hsl(var(--th-accent-hue) calc(100% * var(--th-accent-sat)) 72%) 100%
 	) !important;
 	--brand-gradient-bg: linear-gradient(
 		0deg,
-		hsl(var(--th-accent-hue) 43% 9% / 0.2) 0%,
-		hsl(var(--th-accent-hue) 43% 38% / 0.1) 100%
+		hsl(var(--th-accent-hue) calc(43% * var(--th-accent-sat)) 9% / 0.2) 0%,
+		hsl(var(--th-accent-hue) calc(43% * var(--th-accent-sat)) 38% / 0.1) 100%
 	) !important;
 	--brand-gradient-strong-bg: linear-gradient(
 		270deg,
-		hsl(var(--th-accent-hue) 31% 5%) 10%,
-		hsl(var(--th-accent-hue) 24% 10%) 100%
+		hsl(var(--th-accent-hue) calc(31% * var(--th-accent-sat)) 5%) 10%,
+		hsl(var(--th-accent-hue) calc(24% * var(--th-accent-sat)) 10%) 100%
 	) !important;
-	--brand-gradient-border: hsl(var(--th-accent-hue) 100% 80% / 0.08) !important;
-	--splash-tint-top: hsl(var(--th-accent-hue) 33% 39% / 0.275) !important;
+	--brand-gradient-border: hsl(
+		var(--th-accent-hue) calc(100% * var(--th-accent-sat)) 80% / 0.08
+	) !important;
+	--splash-tint-top: hsl(
+		var(--th-accent-hue) calc(33% * var(--th-accent-sat)) 39% / 0.275
+	) !important;
 }
 
 .oled-mode {
 	--brand-gradient-bg: linear-gradient(
 		0deg,
-		hsl(var(--th-accent-hue) 50% 17% / 0.15) 0%,
-		hsl(var(--th-accent-hue) 43% 38% / 0.1) 100%
+		hsl(var(--th-accent-hue) calc(50% * var(--th-accent-sat)) 17% / 0.15) 0%,
+		hsl(var(--th-accent-hue) calc(43% * var(--th-accent-sat)) 38% / 0.1) 100%
 	) !important;
 	--brand-gradient-strong-bg: linear-gradient(
 		270deg,
-		hsl(var(--th-accent-hue) 33% 5% / 0.6) 10%,
-		hsl(var(--th-accent-hue) 24% 10% / 0.5) 100%
+		hsl(var(--th-accent-hue) calc(33% * var(--th-accent-sat)) 5% / 0.6) 10%,
+		hsl(var(--th-accent-hue) calc(24% * var(--th-accent-sat)) 10% / 0.5) 100%
 	) !important;
 }
 

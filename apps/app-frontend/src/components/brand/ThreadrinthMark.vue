@@ -9,8 +9,8 @@ const gradientId = `threadrinth-thread-${useId()}`
 	<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 40 432 432" aria-hidden="true">
 		<defs>
 			<linearGradient :id="gradientId" x1="0" y1="0" x2="1" y2="1">
-				<stop offset="0" style="stop-color: hsl(calc(var(--th-accent-hue, 30) + 8) 100% 68%)" />
-				<stop offset="1" style="stop-color: hsl(calc(var(--th-accent-hue, 30) - 6) 100% 62%)" />
+				<stop offset="0" style="stop-color: var(--th-logo-light, hsl(38 100% 68%))" />
+				<stop offset="1" style="stop-color: var(--th-logo-deep, hsl(24 100% 62%))" />
 			</linearGradient>
 		</defs>
 		<g

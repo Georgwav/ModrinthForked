@@ -27,6 +27,7 @@ const presetMessages = defineMessages({
 	cyan: { id: 'app.settings.appearance.accent.preset.cyan', defaultMessage: 'Cyan' },
 	green: { id: 'app.settings.appearance.accent.preset.green', defaultMessage: 'Green' },
 	yellow: { id: 'app.settings.appearance.accent.preset.yellow', defaultMessage: 'Yellow' },
+	white: { id: 'app.settings.appearance.accent.preset.white', defaultMessage: 'White' },
 })
 
 const presets = [
@@ -40,7 +41,7 @@ const presets = [
 	{ hue: 55, name: presetMessages.yellow },
 ]
 
-const isDefault = computed(() => accent.hue === DEFAULT_ACCENT_HUE)
+const isDefault = computed(() => !accent.white && accent.hue === DEFAULT_ACCENT_HUE)
 </script>
 
 <template>
@@ -63,10 +64,20 @@ const isDefault = computed(() => accent.hue === DEFAULT_ACCENT_HUE)
 				class="accent-swatch"
 				:style="{ '--swatch-hue': preset.hue }"
 				:aria-label="formatMessage(preset.name)"
-				:aria-pressed="accent.hue === preset.hue"
+				:aria-pressed="!accent.white && accent.hue === preset.hue"
 				@click="accent.set(preset.hue)"
 			>
-				<CheckIcon v-if="accent.hue === preset.hue" aria-hidden="true" />
+				<CheckIcon v-if="!accent.white && accent.hue === preset.hue" aria-hidden="true" />
+			</button>
+			<button
+				v-tooltip="formatMessage(presetMessages.white)"
+				type="button"
+				class="accent-swatch accent-swatch--white"
+				:aria-label="formatMessage(presetMessages.white)"
+				:aria-pressed="accent.white"
+				@click="accent.setWhite()"
+			>
+				<CheckIcon v-if="accent.white" aria-hidden="true" />
 			</button>
 		</div>
 
@@ -109,6 +120,10 @@ const isDefault = computed(() => accent.hue === DEFAULT_ACCENT_HUE)
 
 	&[aria-pressed='true'] {
 		border-color: var(--color-contrast);
+	}
+
+	&--white {
+		background: hsl(0 0% 92%);
 	}
 
 	svg {
