@@ -1,5 +1,3 @@
-# ![Frontend Cover](/.github/assets/web_cover.png)
-
 # Modrinth Web Interface
 
 Welcome to the Modrinth Web Interface! This web-based platform is designed for discovering, downloading, and managing Minecraft mods.

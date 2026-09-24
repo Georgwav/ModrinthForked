@@ -55,10 +55,10 @@
 			}
 		]
 	},
-	"productName": "Modrinth App",
+	"productName": "Threadrinth",
 	"version": "../app-frontend/package.json",
-	"mainBinaryName": "Modrinth App",
-	"identifier": "ModrinthApp",
+	"mainBinaryName": "Threadrinth",
+	"identifier": "Threadrinth",
 	"plugins": {
 		"deep-link": {
 			"desktop": {
@@ -77,7 +77,7 @@
 				"fullscreen": false,
 				"height": 800,
 				"resizable": true,
-				"title": "Modrinth App",
+				"title": "Threadrinth",
 				"label": "main",
 				"width": 1280,
 				"minHeight": 700,

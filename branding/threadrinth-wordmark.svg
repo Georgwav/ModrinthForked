@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 512" width="1640" height="512">
+<defs>
+<linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1C222C"/><stop offset="1" stop-color="#0E1116"/></linearGradient>
+<linearGradient id="thread" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC25C"/><stop offset="1" stop-color="#FF8A3D"/></linearGradient>
+<clipPath id="clip"><rect x="16" y="16" width="480" height="480" rx="112"/></clipPath>
+</defs>
+<rect x="16" y="16" width="480" height="480" rx="112" fill="url(#tile)"/>
+<g clip-path="url(#clip)"><g fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="#343E4C" stroke-width="24"><path d="M174.9 430.0 A192 192 0 0 1 89.7 160.0"/><path d="M160.0 89.7 A192 192 0 1 1 272.7 447.3"/><path d="M327.9 366.7 A132 132 0 0 1 138.4 315.9"/><path d="M125.0 239.9 A132 132 0 0 1 196.1 138.4"/><path d="M272.1 125.0 A132 132 0 0 1 377.5 307.6"/><path d="M211.7 199.3 A72 72 0 1 1 184.7 246.0"/></g><path d="M141.4 141.4 L-41.0 -41.0" stroke="url(#thread)" stroke-width="26"/><path d="M141.4 141.4 A162 162 0 0 1 380.1 360.1 L334.1 321.6 A102 102 0 1 0 167.7 205.0 L256.0 256.0" stroke="url(#thread)" stroke-width="26"/></g></g>
+<text x="560" y="318" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="176" font-weight="800" letter-spacing="-4" fill="#E6EDF3">Thread<tspan fill="#FF8A3D">rinth</tspan></text>
+</svg>

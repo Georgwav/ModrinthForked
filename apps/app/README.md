@@ -1,10 +1,6 @@
-# ![Modrinth App](/.github/assets/app_cover.png)
+# ![Threadrinth](/branding/threadrinth-wordmark.svg)
 
-## Modrinth App
-
-The Modrinth App is a desktop application for managing your Minecraft mods. It is built with [Tauri](https://tauri.app/) and [Vue](https://vuejs.org/).
-
-If you're not a developer and you've stumbled upon this repository, you can download the latest release of the app from the [Modrinth website](https://modrinth.com/app).
+Threadrinth is a fork of the Modrinth App, a desktop application for managing your Minecraft mods. It is built with [Tauri](https://tauri.app/) and [Vue](https://vuejs.org/). See the [repository README](/README.md) for what's different.
 
 ## Development
 

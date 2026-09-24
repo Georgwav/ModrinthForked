@@ -1,57 +1,53 @@
-# ModrinthForked
+# ![Threadrinth](branding/threadrinth-wordmark.svg)
 
-A fork of the [Modrinth monorepo](https://github.com/modrinth/code) (the Modrinth App launcher lives in `apps/app` + `apps/app-frontend`, with the launcher core in `packages/app-lib`), used as the base for our own custom launcher.
+**Threadrinth** is a Minecraft launcher forked from the [Modrinth App](https://github.com/modrinth/code). It's the same launcher, with a few changes on top, and it stays up to date with upstream Modrinth.
 
-## Pulling in upstream Modrinth updates
+> Not affiliated with or endorsed by Modrinth / Rinth, Inc.
 
-This fork keeps full upstream git history, so newer Modrinth versions can be merged on top of our changes:
+## What's different
+
+- **Folder-based instances, like Prism Launcher.** Each instance folder has an `instance.cfg`. On startup, or when you click **Refresh** in the library, the launcher scans the instances folder. Any folder it doesn't know yet is imported, and renamed folders are picked up. Nothing is ever deleted.
+- **Works across Windows and Linux.** A database written by a Windows build opens fine on Linux and the other way around, because migrations that differ only in line endings are accepted. If a database is truly incompatible, it's kept as a backup and your instances come back from their `instance.cfg` files.
+- **Separate from the official app.** Threadrinth has its own data folder and doesn't use Modrinth's auto-updater.
+
+See [ROADMAP.md](ROADMAP.md) for what's next.
+
+## Where things live
+
+| Path | What |
+| --- | --- |
+| `apps/app` | Desktop shell (Tauri) |
+| `apps/app-frontend` | Launcher UI (Vue) |
+| `packages/app-lib` | Launcher core (instances, downloads, launching) |
+| `branding/` | Logo sources. Run `branding/generate-assets.sh` to rebuild the icons |
+
+Other folders (website, API, and so on) come from upstream and are left as they are.
+
+## Development
+
+```sh
+pnpm install
+pnpm app:dev
+```
+
+Requires Node.js, pnpm, Rust and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). Before building, copy `packages/app-lib/.env.prod` to `packages/app-lib/.env`.
+
+## Staying on the newest Modrinth version
+
+This fork keeps Modrinth's full git history, so their updates merge on top of our changes:
 
 ```sh
 git remote add upstream https://github.com/modrinth/code.git   # once
 git fetch upstream
-git merge upstream/main        # or a release tag, e.g. git merge v0.x.y
+git merge upstream/main
 ```
 
-Resolve any conflicts where our changes overlap with upstream ones, then commit.
-
----
-
-# ![Modrinth Monorepo Cover](/.github/assets/monorepo_cover.png)
-
-![Issues](https://img.shields.io/github/issues-raw/Modrinth/code?color=c78aff&label=issues&style=for-the-badge)
-![Pull Requests](https://img.shields.io/github/issues-pr-raw/Modrinth/code?color=c78aff&label=PRs&style=for-the-badge)
-![Contributors](https://img.shields.io/github/contributors/Modrinth/code?color=c78aff&label=contributors&style=for-the-badge)
-![Lines of Code](https://img.shields.io/endpoint?url=https://loctopus.creeperkatze.dev/github/modrinth/code/badge?style=flat&logoColor=white&color=c78aff&style=for-the-badge)
-![Commit Activity](https://img.shields.io/github/commit-activity/m/Modrinth/code?color=c78aff&label=commits&style=for-the-badge)
-![Last Commit](https://img.shields.io/github/last-commit/Modrinth/code?color=c78aff&label=last%20commit&style=for-the-badge)
-
-## Modrinth Monorepo
-
-Welcome to the Modrinth Monorepo, the primary codebase for the Modrinth web interface and app. It contains ![Lines of code](https://img.shields.io/endpoint?url=https://loctopus.creeperkatze.dev/github/modrinth/code/badge%3Fformat%3Dhuman&logoColor=white&color=black&label=) lines of code and has ![Contributors](https://img.shields.io/github/contributors/Modrinth/code?color=black&label=) contributors!
-
-If you're not a developer and you've stumbled upon this repository, you can access the web interface on the [Modrinth website](https://modrinth.com) and download the latest release of the app [here](https://modrinth.com/app).
-
-## Development
-
-This repository contains two primary packages. For detailed development information, please refer to their respective guides:
-
-- [Website frontend](https://docs.modrinth.com/contributing/knossos/)
-- [Desktop app](https://docs.modrinth.com/contributing/theseus/)
+Our changes stay small and separate from upstream code to keep merges easy.
 
 ## Contributing
 
-We welcome contributions! Before submitting any contributions, please read our [contributing guidelines](https://docs.modrinth.com/contributing/getting-started/).
-
-If you plan to fork this repository for your own purposes, please review our [copying guidelines](COPYING.md).
-
-## Security
-
-If you discover a security vulnerability within our codebase, please follow our [responsible disclosure guidelines](https://modrinth.com/legal/security).
-
-## Support
-
-If you need help with the Modrinth web interface or app, please visit our [support page](https://support.modrinth.com). For general inquiries, you can also join our [Discord server](https://discord.modrinth.com).
+`main` is protected, so all changes go through pull requests. Fork the repo, make a branch, and open a PR.
 
 ## License
 
-All packages in this repository are licensed under their respective licenses. Refer to the LICENSE file in each package for more information.
+Same as upstream: the app is GPL-3.0 and other packages keep their own licenses (see [COPYING.md](COPYING.md)). Modrinth's branding has been removed as their license requires. The Threadrinth logo is original artwork.
