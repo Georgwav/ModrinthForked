@@ -185,6 +185,12 @@ impl State {
         state.content_store.recover(None).await?;
         crate::install::recovery::recover_interrupted_jobs(state).await?;
         content_store::migrate(state).await?;
+        // Like Prism, the instances folder decides which instances exist:
+        // folders without a database row are imported from their
+        // instance.cfg, and every instance gets an up-to-date instance.cfg.
+        if let Err(error) = instances::scan_instances_folder(state).await {
+            tracing::error!("Failed to scan the instances folder: {error}");
+        }
         state
             .startup_complete
             .store(true, std::sync::atomic::Ordering::Release);

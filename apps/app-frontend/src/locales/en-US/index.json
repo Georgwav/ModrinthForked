@@ -1193,6 +1193,21 @@
   "app.library.instance.stop": {
     "message": "Stop"
   },
+  "app.library.refresh": {
+    "message": "Refresh"
+  },
+  "app.library.refresh.found": {
+    "message": "{count, plural, one {Found # instance} other {Found # instances}} in the instances folder"
+  },
+  "app.library.refresh.skipped": {
+    "message": "{count, plural, one {# folder could not be imported} other {# folders could not be imported}}"
+  },
+  "app.library.refresh.skipped.detail": {
+    "message": "{folders}. Check the launcher logs for details."
+  },
+  "app.library.refresh.tooltip": {
+    "message": "Rescan the instances folder for new or changed instances"
+  },
   "app.library.search.no-results.title": {
     "message": "No instances match your search."
   },

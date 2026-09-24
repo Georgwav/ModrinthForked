@@ -110,6 +110,19 @@ pub(crate) async fn edit_instance(
     patch: EditInstance,
     pool: &SqlitePool,
 ) -> crate::Result<Instance> {
+    let instance = edit_instance_row(instance_id, patch, pool).await?;
+    super::scan_instances::sync_instance_cfg(instance_id, pool).await;
+
+    Ok(instance)
+}
+
+/// Applies `patch` to the database only, without refreshing the instance's
+/// `instance.cfg`.
+pub(super) async fn edit_instance_row(
+    instance_id: &str,
+    patch: EditInstance,
+    pool: &SqlitePool,
+) -> crate::Result<Instance> {
     let state = crate::State::get_if_initialized();
     let _runtime_lease = if patch.launch_overrides.is_some()
         || patch.content_set_patch.is_some()

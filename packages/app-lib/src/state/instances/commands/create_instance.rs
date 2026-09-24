@@ -122,6 +122,8 @@ pub(crate) async fn create_instance(
         )
         .await?;
         tx.commit().await?;
+        super::scan_instances::sync_instance_cfg(&instance.id, &state.pool)
+            .await;
 
         crate::state::instances::watcher::watch_instance_folder(
             &instance.id,
@@ -235,7 +237,7 @@ pub(crate) async fn resolve_icon_path(
     Ok(Some(file.to_string_lossy().to_string()))
 }
 
-fn content_source_kind(link: &InstanceLink) -> ContentSourceKind {
+pub(super) fn content_source_kind(link: &InstanceLink) -> ContentSourceKind {
     match link {
         InstanceLink::Unmanaged => ContentSourceKind::Local,
         InstanceLink::ModrinthModpack { .. } => {

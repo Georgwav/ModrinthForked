@@ -264,6 +264,7 @@ fn main() {
                         "instance_remove_synced_pack",
                         "instance_rebuild_synced_options",
                         "instance_list",
+                        "instance_refresh",
                         "instance_list_groups",
                         "instance_create_group",
                         "instance_rename_group",

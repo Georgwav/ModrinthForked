@@ -29,6 +29,7 @@ pub fn init<R: tauri::Runtime>() -> tauri::plugin::TauriPlugin<R> {
             instance_get,
             instance_get_many,
             instance_list,
+            instance_refresh,
             instance_list_groups,
             instance_create_group,
             instance_rename_group,
@@ -554,6 +555,14 @@ pub async fn instance_list() -> Result<Vec<Instance>> {
         .into_iter()
         .map(Instance::from)
         .collect())
+}
+
+/// Rescans the instances folder and refreshes the instance list, returning
+/// what changed.
+#[tauri::command]
+pub async fn instance_refresh() -> Result<theseus::instance::InstanceScanReport>
+{
+    Ok(theseus::instance::refresh().await?)
 }
 
 #[tauri::command]

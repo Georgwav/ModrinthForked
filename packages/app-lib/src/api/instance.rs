@@ -33,7 +33,7 @@ pub use self::export_mrpack::{
     PackExportCandidate, create_mrpack_json, export_mrpack,
     get_pack_export_candidates, get_pack_export_candidates_for_parent,
 };
-pub use self::get::{get, get_many, list};
+pub use self::get::{get, get_many, list, refresh};
 pub use self::groups::{
     FAVORITES_GROUP_ID, InstanceGroup, InstanceGroupMembershipUpdate,
     create_group, delete_group, list_groups, rename_group,
@@ -146,6 +146,7 @@ pub use self::synced_servers::{
     DesyncServerMode, ServerSource, SyncedServer, desync_server,
     list_synced_servers, remove_synced_server, update_synced_server,
 };
+pub use crate::state::InstanceScanReport;
 
 pub use self::synced_packs::{
     PackSyncPreview, PackSyncTarget, desync_pack, get_pack_sync_preview,

@@ -7,9 +7,10 @@ pub(crate) use self::model::{StoredOption, StoredPreference};
 
 pub(crate) mod adapters;
 pub(crate) mod commands;
+pub(crate) mod instance_cfg;
 pub use self::commands::{
     AppliedContentSetPatch, CreateInstance, EditInstance,
-    InstanceLaunchOverridesPatch, InstanceMetadata,
+    InstanceLaunchOverridesPatch, InstanceMetadata, InstanceScanReport,
 };
 pub(crate) use self::commands::{
     attach_shared_instance, clear_shared_instance, quarantine_shared_instance,
@@ -17,7 +18,8 @@ pub(crate) use self::commands::{
 };
 pub(crate) use self::commands::{
     create_instance, edit_instance, get_instance, get_instances_metadata,
-    list_instances, refresh_all_instances, remove_instance,
+    list_instances, refresh_all_instances, refresh_instances_with_report,
+    remove_instance, scan_instances_folder,
 };
 pub(crate) use self::commands::{
     dependencies_to_content_items, get_content_projects,

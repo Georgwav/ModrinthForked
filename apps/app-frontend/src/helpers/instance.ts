@@ -412,6 +412,19 @@ export async function list(): Promise<GameInstance[]> {
 	return await invoke('plugin:instance|instance_list')
 }
 
+export type InstanceScanReport = {
+	imported: string[]
+	relocated: string[]
+	updated_from_cfg: string[]
+	skipped: [string, string][]
+}
+
+// Rescans the instances folder: folders without a library entry are imported
+// from their instance.cfg, and every instance's instance.cfg is refreshed.
+export async function refresh(): Promise<InstanceScanReport> {
+	return await invoke('plugin:instance|instance_refresh')
+}
+
 export async function check_installed(instanceId: string, projectId: string): Promise<boolean> {
 	return await invoke('plugin:instance|instance_check_installed', { instanceId, projectId })
 }

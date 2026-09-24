@@ -33,6 +33,10 @@ pub(crate) use self::remove_instance::*;
 mod refresh_instances;
 pub(crate) use self::refresh_instances::*;
 
+mod scan_instances;
+pub use self::scan_instances::InstanceScanReport;
+pub(crate) use self::scan_instances::scan_instances_folder;
+
 mod migrate_legacy_content;
 mod sync_content_files;
 pub(crate) use self::migrate_legacy_content::migrate_legacy_content;
