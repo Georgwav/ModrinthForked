@@ -67,3 +67,6 @@ pub(crate) use self::shared_instance::{
     attach_shared_instance, clear_shared_instance, mark_shared_instance_stale,
     quarantine_shared_instance, set_shared_instance_sync_status,
 };
+
+#[cfg(test)]
+mod scan_instances_e2e_tests;

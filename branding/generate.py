@@ -10,6 +10,10 @@ from pathlib import Path
 OUT = Path(__file__).parent
 C = 256.0
 THREAD = ("#FFC25C", "#FF8A3D")  # amber gradient, top-left to bottom-right
+# The in-app logo follows the accent color: the same two shades, derived from
+# the accent hue (amber is hue 30: #FFC25C and #FF8A3D).
+ACCENT_LIGHT = "hsl(calc(var(--th-accent-hue, 30) + 8) 100% 68%)"
+ACCENT_DEEP = "hsl(calc(var(--th-accent-hue, 30) - 6) 100% 62%)"
 WALL = "#343E4C"
 
 
@@ -105,7 +109,8 @@ wordmark = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1640 512" wi
 (OUT / "threadrinth-mark.svg").write_text(mark_svg)
 (OUT / "threadrinth-wordmark.svg").write_text(wordmark)
 
-# In-app logo. Walls follow the text color so the mark works on every theme.
+# In-app logo. Walls follow the text color so the mark works on every theme,
+# and the thread follows the accent color.
 vue_walls = "\n".join(
     f'\t\t\t<path d="{d}" />' for r, g, w in WALLS for d in wall(r, g, w)
 )
@@ -120,8 +125,8 @@ const gradientId = `threadrinth-thread-${{useId()}}`
 \t<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 40 432 432" aria-hidden="true">
 \t\t<defs>
 \t\t\t<linearGradient :id="gradientId" x1="0" y1="0" x2="1" y2="1">
-\t\t\t\t<stop offset="0" stop-color="{THREAD[0]}" />
-\t\t\t\t<stop offset="1" stop-color="{THREAD[1]}" />
+\t\t\t\t<stop offset="0" style="stop-color: {ACCENT_LIGHT}" />
+\t\t\t\t<stop offset="1" style="stop-color: {ACCENT_DEEP}" />
 \t\t\t</linearGradient>
 \t\t</defs>
 \t\t<g

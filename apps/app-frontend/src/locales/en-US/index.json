@@ -3542,8 +3542,20 @@
   "app.welcome-screen.quick-create-hint": {
     "message": "Press <shortcut>N</shortcut> to quick create an instance"
   },
+  "app.welcome-screen.refresh-instances": {
+    "message": "Refresh instances"
+  },
+  "app.welcome-screen.refresh-nothing-found": {
+    "message": "No instances found"
+  },
+  "app.welcome-screen.refresh-nothing-found.text": {
+    "message": "Put instance folders into the instances folder (Settings → Resource management), then refresh again."
+  },
+  "app.welcome-screen.refresh-prompt": {
+    "message": "Already have instances in your instances folder?"
+  },
   "app.welcome-screen.title": {
-    "message": "Welcome to Modrinth"
+    "message": "Welcome to Threadrinth"
   },
   "app.world.server-modal.placeholder-address": {
     "message": "example.modrinth.gg"

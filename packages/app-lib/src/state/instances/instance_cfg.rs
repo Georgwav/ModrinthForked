@@ -11,8 +11,11 @@
 
 use crate::state::{InstanceLink, ModLoader};
 use chrono::{DateTime, TimeZone, Utc};
+use regex::Regex;
+use std::collections::HashMap;
 use std::io::{Cursor, Read};
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 
 pub(crate) const INSTANCE_CFG_FILE_NAME: &str = "instance.cfg";
 const GENERAL_SECTION: &str = "General";
@@ -270,6 +273,13 @@ pub(crate) fn infer_instance_cfg(
         .or_else(|| {
             let game_version = infer_game_version_from_worlds(dir)?;
             Some((game_version, infer_loader_from_mods(dir), None))
+        })
+        // Without a world there is nothing a wrong version could upgrade, so
+        // weaker hints are fine from here on.
+        .or_else(|| infer_from_logs(dir))
+        .or_else(|| {
+            let game_version = infer_game_version_from_mods(dir)?;
+            Some((game_version, infer_loader_from_mods(dir), None))
         })?;
 
     Some(InstanceCfg {
@@ -377,6 +387,137 @@ fn infer_game_version_from_worlds(dir: &Path) -> Option<String> {
     (!name.is_empty()).then(|| name.to_string())
 }
 
+/// Reads the versions the game logged at its last start (`logs/latest.log`),
+/// or the version in the newest crash report.
+fn infer_from_logs(dir: &Path) -> Option<InferredVersion> {
+    if let Some(found) = read_prefix(&dir.join("logs/latest.log"))
+        .and_then(|log| parse_log_versions(&log))
+    {
+        return Some(found);
+    }
+    let newest_report = std::fs::read_dir(dir.join("crash-reports"))
+        .ok()?
+        .flatten()
+        .filter(|entry| {
+            entry.path().extension().is_some_and(|ext| ext == "txt")
+        })
+        .max_by_key(|entry| entry.metadata().and_then(|m| m.modified()).ok())?;
+    let report = read_prefix(&newest_report.path())?;
+    let version = CRASH_REPORT_VERSION.captures(&report)?[1].to_string();
+    Some((version, infer_loader_from_mods(dir), None))
+}
+
+fn read_prefix(path: &Path) -> Option<String> {
+    let mut file = std::fs::File::open(path).ok()?;
+    let mut bytes = Vec::new();
+    file.by_ref()
+        .take(512 * 1024)
+        .read_to_end(&mut bytes)
+        .ok()?;
+    Some(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+static FABRIC_LOG: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"Loading Minecraft (\S+) with (Fabric|Quilt) Loader (\S+)")
+        .unwrap()
+});
+static FML_ARG: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"--fml\.(mcVersion|forgeVersion|neoForgeVersion), ([^,\]\s]+)")
+        .unwrap()
+});
+static CRASH_REPORT_VERSION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"Minecraft Version: (\S+)").unwrap());
+
+pub(crate) fn parse_log_versions(log: &str) -> Option<InferredVersion> {
+    if let Some(captures) = FABRIC_LOG.captures(log) {
+        let loader = if &captures[2] == "Quilt" {
+            ModLoader::Quilt
+        } else {
+            ModLoader::Fabric
+        };
+        return Some((
+            captures[1].to_string(),
+            loader,
+            Some(captures[3].to_string()),
+        ));
+    }
+
+    let (mut game_version, mut forge, mut neoforge) = (None, None, None);
+    for captures in FML_ARG.captures_iter(log) {
+        let value = Some(captures[2].to_string());
+        match &captures[1] {
+            "mcVersion" => game_version = game_version.or(value),
+            "forgeVersion" => forge = forge.or(value),
+            _ => neoforge = neoforge.or(value),
+        }
+    }
+    let game_version = game_version?;
+    Some(match (neoforge, forge) {
+        (Some(version), _) => {
+            (game_version, ModLoader::NeoForge, Some(version))
+        }
+        (None, forge) => (game_version, ModLoader::Forge, forge),
+    })
+}
+
+static EXACT_VERSION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[~=]?(\d+(?:\.\d+)+)$").unwrap());
+static TOML_EXACT_MINECRAFT: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?s)modId\s*=\s*"minecraft".*?versionRange\s*=\s*"\[(\d+(?:\.\d+)+)\]""#,
+    )
+    .unwrap()
+});
+
+/// The Minecraft version most mods in `mods/` are pinned to.
+fn infer_game_version_from_mods(dir: &Path) -> Option<String> {
+    let mut votes: HashMap<String, usize> = HashMap::new();
+    for entry in std::fs::read_dir(dir.join("mods")).ok()?.flatten().take(64) {
+        if let Some(version) = pinned_minecraft_version(&entry.path()) {
+            *votes.entry(version).or_default() += 1;
+        }
+    }
+    votes
+        .into_iter()
+        .max_by(|a, b| a.1.cmp(&b.1).then_with(|| b.0.cmp(&a.0)))
+        .map(|(version, _)| version)
+}
+
+fn pinned_minecraft_version(jar: &Path) -> Option<String> {
+    if !jar
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("jar"))
+    {
+        return None;
+    }
+    let mut archive =
+        zip::ZipArchive::new(std::fs::File::open(jar).ok()?).ok()?;
+    let mut read = |name: &str| -> Option<String> {
+        let mut file = archive.by_name(name).ok()?;
+        let mut text = String::new();
+        file.read_to_string(&mut text).ok()?;
+        Some(text)
+    };
+
+    if let Some(text) = read("fabric.mod.json") {
+        let json: serde_json::Value = serde_json::from_str(&text).ok()?;
+        let requirement = json.get("depends")?.get("minecraft")?;
+        let requirement = match requirement {
+            serde_json::Value::String(value) => value.clone(),
+            serde_json::Value::Array(values) if values.len() == 1 => {
+                values[0].as_str()?.to_string()
+            }
+            _ => return None,
+        };
+        return Some(
+            EXACT_VERSION.captures(requirement.trim())?[1].to_string(),
+        );
+    }
+    let toml = read("META-INF/neoforge.mods.toml")
+        .or_else(|| read("META-INF/mods.toml"))?;
+    Some(TOML_EXACT_MINECRAFT.captures(&toml)?[1].to_string())
+}
+
 /// Detects the mod loader from the metadata files inside the mod jars.
 fn infer_loader_from_mods(dir: &Path) -> ModLoader {
     let Ok(mods) = std::fs::read_dir(dir.join("mods")) else {
@@ -432,7 +573,7 @@ fn infer_loader_from_mods(dir: &Path) -> ModLoader {
         .map_or(ModLoader::Vanilla, |(index, _)| loaders[index])
 }
 
-fn parse_loader(value: &str) -> Option<ModLoader> {
+pub(crate) fn parse_loader(value: &str) -> Option<ModLoader> {
     match value.trim().to_ascii_lowercase().as_str() {
         "vanilla" => Some(ModLoader::Vanilla),
         "forge" => Some(ModLoader::Forge),
@@ -770,5 +911,92 @@ mod tests {
             read_instance_cfg(dir.path()).await.unwrap(),
             CfgRead::Parsed(_)
         ));
+    }
+
+    #[test]
+    fn reads_versions_from_fabric_log() {
+        let log = "[main/INFO]: Loading Minecraft 1.21.11 with Fabric Loader 0.17.2\n";
+        assert_eq!(
+            parse_log_versions(log),
+            Some((
+                "1.21.11".to_string(),
+                ModLoader::Fabric,
+                Some("0.17.2".to_string())
+            ))
+        );
+    }
+
+    #[test]
+    fn reads_versions_from_fml_arguments() {
+        let neoforge = "Launched with [--fml.neoForgeVersion, 21.11.3, --fml.mcVersion, 1.21.11, --fml.neoFormVersion, 20251201]";
+        assert_eq!(
+            parse_log_versions(neoforge),
+            Some((
+                "1.21.11".to_string(),
+                ModLoader::NeoForge,
+                Some("21.11.3".to_string())
+            ))
+        );
+        let forge = "[--fml.forgeVersion, 47.3.0, --fml.mcVersion, 1.20.1]";
+        assert_eq!(
+            parse_log_versions(forge),
+            Some((
+                "1.20.1".to_string(),
+                ModLoader::Forge,
+                Some("47.3.0".to_string())
+            ))
+        );
+        assert_eq!(parse_log_versions("no versions here"), None);
+    }
+
+    fn write_jar(path: &Path, name: &str, contents: &str) {
+        use std::io::Write;
+        let mut jar = zip::ZipWriter::new(std::fs::File::create(path).unwrap());
+        jar.start_file(name, zip::write::SimpleFileOptions::default())
+            .unwrap();
+        jar.write_all(contents.as_bytes()).unwrap();
+        jar.finish().unwrap();
+    }
+
+    #[test]
+    fn infers_version_from_pinned_mods() {
+        let dir = tempfile::tempdir().unwrap();
+        let mods = dir.path().join("mods");
+        std::fs::create_dir(&mods).unwrap();
+        write_jar(
+            &mods.join("a.jar"),
+            "fabric.mod.json",
+            r#"{"depends":{"minecraft":"~26.1.2"}}"#,
+        );
+        write_jar(
+            &mods.join("b.jar"),
+            "fabric.mod.json",
+            r#"{"depends":{"minecraft":"26.1.2"}}"#,
+        );
+        write_jar(
+            &mods.join("c.jar"),
+            "fabric.mod.json",
+            r#"{"depends":{"minecraft":">=1.21"}}"#,
+        );
+
+        let cfg = infer_instance_cfg(dir.path(), "Pack").unwrap();
+        assert_eq!(cfg.game_version, "26.1.2");
+        assert_eq!(cfg.loader, ModLoader::Fabric);
+    }
+
+    #[test]
+    fn infers_version_from_latest_log() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("logs")).unwrap();
+        std::fs::write(
+            dir.path().join("logs/latest.log"),
+            "Loading Minecraft 1.21.11 with Quilt Loader 0.29.0",
+        )
+        .unwrap();
+
+        let cfg = infer_instance_cfg(dir.path(), "Pack").unwrap();
+        assert_eq!(cfg.game_version, "1.21.11");
+        assert_eq!(cfg.loader, ModLoader::Quilt);
+        assert_eq!(cfg.loader_version.as_deref(), Some("0.29.0"));
     }
 }
