@@ -126,6 +126,10 @@ async fn folder_instances_work_with_launcher_features() {
         "not an instance",
     );
 
+    // Installing Minecraft for the imports would download the game and lock
+    // the instances this test edits.
+    super::scan_instances::QUEUE_INSTALLS
+        .store(false, std::sync::atomic::Ordering::Relaxed);
     State::init("ThreadrinthE2E".to_string()).await.unwrap();
 
     // --- Import ---------------------------------------------------------
@@ -331,6 +335,37 @@ async fn folder_instances_work_with_launcher_features() {
         assert!(!meta.synced_options.multiplayer_servers);
     }
     println!("created instance + synced options: ok");
+
+    // --- Install without Repair ----------------------------------------
+    // A new import is queued for install, so Play works right away.
+    super::scan_instances::QUEUE_INSTALLS
+        .store(true, std::sync::atomic::Ordering::Relaxed);
+    write(
+        &profiles.join("Auto Install/instance.cfg"),
+        "[General]\nModrinthGameVersion=1.20.1\nModrinthLoader=vanilla\n",
+    );
+    let report = api::refresh().await.unwrap();
+    let auto_install =
+        instance_by_path("Auto Install").await.expect("imported");
+    assert!(report.imported.contains(&auto_install.instance.id));
+    let mut job = None;
+    for _ in 0..100 {
+        job = crate::install::runner::list_jobs(true)
+            .await
+            .unwrap()
+            .into_iter()
+            .find(|job| {
+                job.instance_id.as_deref() == Some(&auto_install.instance.id)
+            });
+        if job.is_some() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    let job = job.expect("install queued for the import");
+    let _ =
+        crate::install::runner::cancel_job(job.job_id.parse().unwrap()).await;
+    println!("install queued without repair: ok");
 }
 
 fn copy_dir(from: &Path, to: &Path) {

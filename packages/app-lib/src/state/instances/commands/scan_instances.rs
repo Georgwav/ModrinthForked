@@ -29,6 +29,7 @@ use serde::Serialize;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use uuid::Uuid;
 
 /// What a scan of the instances directory changed.
@@ -156,6 +157,7 @@ pub(crate) async fn scan_instances_folder(
     }
 
     emit_scan_events(&report).await;
+    queue_minecraft_installs(&report);
     if !report.imported.is_empty() || !report.relocated.is_empty() {
         // Found instances count as having one, so the welcome screen gives
         // way to the library.
@@ -169,6 +171,63 @@ pub(crate) async fn scan_instances_folder(
     }
 
     Ok(report)
+}
+
+/// Turns off queueing installs for scanned instances; the end-to-end test
+/// uses it to stay offline and keep instances unlocked.
+pub(crate) static QUEUE_INSTALLS: AtomicBool = AtomicBool::new(true);
+
+/// Queues the Minecraft and loader install for instances the scan left
+/// `NotInstalled` (new imports, or a version changed in `instance.cfg`), so
+/// they can be played without clicking Repair. This only downloads the game
+/// into the shared metadata folder; the instance's own files are untouched.
+fn queue_minecraft_installs(report: &InstanceScanReport) {
+    if !QUEUE_INSTALLS.load(Ordering::Relaxed) {
+        return;
+    }
+    let ids: Vec<String> = report
+        .imported
+        .iter()
+        .chain(&report.relocated)
+        .chain(&report.updated_from_cfg)
+        .cloned()
+        .collect();
+    if ids.is_empty() {
+        return;
+    }
+
+    // Spawned, because the scan also runs while the app is starting up.
+    tokio::spawn(async move {
+        let Ok(state) = State::get().await else {
+            return;
+        };
+        for id in ids {
+            match crate::state::get_instance(&id, &state.pool).await {
+                Ok(Some(instance))
+                    if instance.instance.install_stage
+                        == InstanceInstallStage::NotInstalled
+                        && !instance.quarantined => {}
+                Ok(_) => continue,
+                Err(error) => {
+                    tracing::warn!(
+                        "Could not load scanned instance {id}: {error}"
+                    );
+                    continue;
+                }
+            }
+            if let Err(error) =
+                crate::install::runner::install_existing_instance(
+                    id.clone(),
+                    false,
+                )
+                .await
+            {
+                tracing::warn!(
+                    "Could not queue the install of scanned instance {id}: {error}"
+                );
+            }
+        }
+    });
 }
 
 /// Tells the frontend about instances the scan added or changed, so they show
