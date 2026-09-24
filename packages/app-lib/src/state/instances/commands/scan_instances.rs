@@ -142,6 +142,17 @@ pub(crate) async fn scan_instances_folder(
     }
 
     emit_scan_events(&report).await;
+    if !report.imported.is_empty() || !report.relocated.is_empty() {
+        // Found instances count as having one, so the welcome screen gives
+        // way to the library.
+        if let Err(error) =
+            crate::api::onboarding_checklist::mark_created_instance().await
+        {
+            tracing::warn!(
+                "Could not update the onboarding checklist: {error}"
+            );
+        }
+    }
 
     Ok(report)
 }

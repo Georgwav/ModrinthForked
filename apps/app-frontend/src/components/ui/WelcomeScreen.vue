@@ -1,19 +1,32 @@
 <script setup lang="ts">
-import { ImportIcon, PlusIcon } from '@modrinth/assets'
-import { Button, defineMessages, IntlFormatted, useVIntl } from '@modrinth/ui'
+import { ImportIcon, PlusIcon, RefreshCwIcon } from '@modrinth/assets'
+import {
+	Button,
+	defineMessages,
+	injectNotificationManager,
+	IntlFormatted,
+	useVIntl,
+} from '@modrinth/ui'
+import { useQueryClient } from '@tanstack/vue-query'
 import { inject, onMounted, onUnmounted, ref } from 'vue'
 
-import modrinthSocialIcon from '../../assets/welcome/modrinth-social-icon.png'
+import ThreadrinthMark from '@/components/brand/ThreadrinthMark.vue'
+import { toError } from '@/helpers/errors'
+import { refresh as refreshInstances } from '@/helpers/instance'
+import { instanceKeys } from '@/pages/instance/query-options'
 
 const showCreationModal = inject<() => void>('showCreationModal')
 const showImportModal = inject<() => void>('showImportModal')
 
 const { formatMessage } = useVIntl()
+const { addNotification, handleError } = injectNotificationManager()
+const queryClient = useQueryClient()
+const refreshing = ref(false)
 
 const messages = defineMessages({
 	welcomeTitle: {
 		id: 'app.welcome-screen.title',
-		defaultMessage: 'Welcome to Modrinth',
+		defaultMessage: 'Welcome to Threadrinth',
 	},
 	welcomeDescription: {
 		id: 'app.welcome-screen.description',
@@ -35,7 +48,44 @@ const messages = defineMessages({
 		id: 'app.welcome-screen.import-from-launcher',
 		defaultMessage: 'Import from launcher',
 	},
+	refreshPrompt: {
+		id: 'app.welcome-screen.refresh-prompt',
+		defaultMessage: 'Already have instances in your instances folder?',
+	},
+	refreshInstances: {
+		id: 'app.welcome-screen.refresh-instances',
+		defaultMessage: 'Refresh instances',
+	},
+	refreshNothingFound: {
+		id: 'app.welcome-screen.refresh-nothing-found',
+		defaultMessage: 'No instances found',
+	},
+	refreshNothingFoundText: {
+		id: 'app.welcome-screen.refresh-nothing-found.text',
+		defaultMessage:
+			'Put instance folders into the instances folder (Settings → Resource management), then refresh again.',
+	},
 })
+
+async function refresh() {
+	if (refreshing.value) return
+	refreshing.value = true
+	try {
+		const report = await refreshInstances()
+		await queryClient.invalidateQueries({ queryKey: instanceKeys.all })
+		if (report.imported.length + report.relocated.length === 0) {
+			addNotification({
+				type: 'info',
+				title: formatMessage(messages.refreshNothingFound),
+				text: formatMessage(messages.refreshNothingFoundText),
+			})
+		}
+	} catch (error) {
+		handleError(toError(error))
+	} finally {
+		refreshing.value = false
+	}
+}
 
 const offline = ref(!navigator.onLine)
 
@@ -89,7 +139,7 @@ onUnmounted(() => {
 					aria-hidden="true"
 				/>
 				<div class="size-[6.25rem]">
-					<img :src="modrinthSocialIcon" alt="" class="pointer-events-none size-full" />
+					<ThreadrinthMark class="pointer-events-none size-full text-contrast" />
 				</div>
 				<div class="flex flex-col items-center gap-2">
 					<h1 class="m-0 flex items-center gap-2 text-2xl font-semibold leading-8 text-contrast">
@@ -132,6 +182,11 @@ onUnmounted(() => {
 			<Button size="lg" class="!font-medium" :disabled="offline" @click="showImportModal?.()">
 				<ImportIcon />
 				{{ formatMessage(messages.importFromLauncher) }}
+			</Button>
+			<span class="mt-2 whitespace-nowrap">{{ formatMessage(messages.refreshPrompt) }}</span>
+			<Button size="lg" class="!font-medium" :disabled="refreshing" @click="refresh">
+				<RefreshCwIcon :class="{ 'animate-spin': refreshing }" />
+				{{ formatMessage(messages.refreshInstances) }}
 			</Button>
 		</div>
 	</div>

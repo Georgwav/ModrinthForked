@@ -64,3 +64,6 @@ packages/muralpay
 packages/neverbounce
 packages/sqlx-tracing
 packages/xredis
+
+# Modrinth logo on the welcome screen (replaced by the Threadrinth mark)
+apps/app-frontend/src/assets/welcome/modrinth-social-icon.png

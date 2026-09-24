@@ -147,6 +147,13 @@ async fn folder_instances_work_with_launcher_features() {
     assert!(instance_by_path("Screenshots Backup").await.is_none());
     assert!(!profiles.join("Unknown Version/instance.cfg").exists());
     assert!(!profiles.join("Screenshots Backup/instance.cfg").exists());
+    assert!(
+        crate::api::onboarding_checklist::get()
+            .await
+            .unwrap()
+            .has_created_instance,
+        "imported instances dismiss the welcome screen"
+    );
     println!("import: ok");
 
     let prism_id = prism_meta.instance.id.clone();
