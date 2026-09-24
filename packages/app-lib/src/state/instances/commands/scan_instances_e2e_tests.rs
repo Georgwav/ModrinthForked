@@ -336,6 +336,40 @@ async fn folder_instances_work_with_launcher_features() {
     }
     println!("created instance + synced options: ok");
 
+    // --- Icons -----------------------------------------------------------
+    // A folder's own icon.png becomes the icon of an instance without one.
+    let mut icon = Vec::new();
+    image::RgbaImage::from_pixel(16, 16, image::Rgba([255, 160, 0, 255]))
+        .write_to(
+            &mut std::io::Cursor::new(&mut icon),
+            image::ImageFormat::Png,
+        )
+        .unwrap();
+    write(&profiles.join("Legacy/icon.png"), &icon);
+    api::refresh().await.unwrap();
+    let legacy = instance_by_path("Legacy").await.unwrap();
+    let icon_path = legacy.instance.icon_path.expect("icon from icon.png");
+    assert!(Path::new(&icon_path).is_file());
+    assert!(profiles.join("Legacy/icon.png").is_file(), "source kept");
+    println!("icon from folder: ok");
+
+    // --- Icons -----------------------------------------------------------
+    // A folder's own icon.png becomes the icon of an instance without one.
+    let mut icon = Vec::new();
+    image::RgbaImage::from_pixel(16, 16, image::Rgba([255, 160, 0, 255]))
+        .write_to(
+            &mut std::io::Cursor::new(&mut icon),
+            image::ImageFormat::Png,
+        )
+        .unwrap();
+    write(&profiles.join("Legacy/icon.png"), &icon);
+    api::refresh().await.unwrap();
+    let legacy = instance_by_path("Legacy").await.unwrap();
+    let icon_path = legacy.instance.icon_path.expect("icon from icon.png");
+    assert!(Path::new(&icon_path).is_file());
+    assert!(profiles.join("Legacy/icon.png").is_file(), "source kept");
+    println!("icon from folder: ok");
+
     // --- Install without Repair ----------------------------------------
     // A new import is queued for install, so Play works right away.
     super::scan_instances::QUEUE_INSTALLS

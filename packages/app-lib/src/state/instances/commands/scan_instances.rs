@@ -14,7 +14,9 @@ use crate::state::instances::instance_cfg::{
     self, CfgRead, InstanceCfg, infer_instance_cfg, is_nested_prism_instance,
     looks_like_instance, read_instance_cfg, write_instance_cfg,
 };
-use crate::state::instances::modrinth_app_import::load_modrinth_app_instances;
+use crate::state::instances::modrinth_app_import::{
+    ModrinthAppInstance, load_modrinth_app_instances,
+};
 use crate::state::instances::{
     ContentSet, ContentSetStatus, Instance, InstanceLaunchOverrides,
     InstanceLink,
@@ -108,7 +110,7 @@ pub(crate) async fn scan_instances_folder(
 
     let modrinth_app = if folders
         .iter()
-        .any(|folder| !rows_by_path.contains_key(folder))
+        .any(|folder| rows_by_path.get(folder).is_none_or(|row| !has_icon(row)))
     {
         load_modrinth_app_instances(
             &state.directories.settings_dir.join("app.db"),
@@ -146,6 +148,8 @@ pub(crate) async fn scan_instances_folder(
         }
     }
 
+    add_missing_icons(&instances_dir, &modrinth_app, state).await;
+
     if report.changed() || !report.skipped.is_empty() {
         tracing::info!(
             imported = report.imported.len(),
@@ -171,6 +175,65 @@ pub(crate) async fn scan_instances_folder(
     }
 
     Ok(report)
+}
+
+fn has_icon(instance: &Instance) -> bool {
+    instance
+        .icon_path
+        .as_deref()
+        .is_some_and(|icon| !icon.is_empty())
+}
+
+/// Gives instances without an icon the one the official Modrinth App shows
+/// for the same folder, or the folder's own `icon.png`. The image is copied
+/// into Threadrinth's icon cache; the source is never changed.
+async fn add_missing_icons(
+    instances_dir: &Path,
+    modrinth_app: &HashMap<String, ModrinthAppInstance>,
+    state: &State,
+) {
+    let rows = match instance_rows::list_instances(&state.pool).await {
+        Ok(rows) => rows,
+        Err(error) => {
+            tracing::warn!("Could not list instances for icons: {error}");
+            return;
+        }
+    };
+
+    for row in rows.iter().filter(|row| !has_icon(row)) {
+        let folder_icon = instances_dir.join(&row.path).join("icon.png");
+        let Some(source) = modrinth_app
+            .get(&row.path)
+            .and_then(|instance| instance.icon.clone())
+            .or_else(|| folder_icon.is_file().then_some(folder_icon))
+        else {
+            continue;
+        };
+
+        let result = async {
+            let cached =
+                crate::api::instance::cache_icon_from_path(&source, state)
+                    .await?;
+            super::edit_instance::edit_instance(
+                &row.id,
+                EditInstance {
+                    icon_path: Some(Some(cached.to_string_lossy().to_string())),
+                    ..EditInstance::default()
+                },
+                &state.pool,
+            )
+            .await?;
+            emit_instance(&row.id, InstancePayloadType::Edited).await
+        }
+        .await;
+        if let Err(error) = result {
+            tracing::warn!(
+                "Could not use {} as the icon of {:?}: {error}",
+                source.display(),
+                row.path
+            );
+        }
+    }
 }
 
 /// Turns off queueing installs for scanned instances; the end-to-end test
@@ -278,7 +341,7 @@ async fn import_unknown_folder(
     folder: &str,
     dir: &Path,
     instances_dir: &Path,
-    modrinth_app: &HashMap<String, InstanceCfg>,
+    modrinth_app: &HashMap<String, ModrinthAppInstance>,
     rows_by_id: &mut HashMap<String, Instance>,
     state: &State,
     report: &mut InstanceScanReport,
@@ -293,8 +356,8 @@ async fn import_unknown_folder(
                 ));
                 return Ok(());
             }
-            if let Some(cfg) = modrinth_app.get(folder) {
-                cfg.clone()
+            if let Some(instance) = modrinth_app.get(folder) {
+                instance.cfg.clone()
             } else {
                 if matches!(read, CfgRead::Missing) && !looks_like_instance(dir)
                 {
