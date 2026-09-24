@@ -1,0 +1,73 @@
+{
+	"fill": {
+		"linear-gradient": [
+			"display-p3:0.11000,0.13300,0.17300,1.00000",
+			"display-p3:0.05500,0.06700,0.08600,1.00000"
+		]
+	},
+	"groups": [
+		{
+			"blur-material": 0.5,
+			"layers": [
+				{
+					"blend-mode-specializations": [
+						{
+							"appearance": "tinted",
+							"value": "normal"
+						}
+					],
+					"fill-specializations": [
+						{
+							"value": {
+								"linear-gradient": [
+									"display-p3:1.00000,0.76100,0.36100,1.00000",
+									"display-p3:1.00000,0.54100,0.23900,1.00000"
+								]
+							}
+						},
+						{
+							"appearance": "tinted",
+							"value": "automatic"
+						}
+					],
+					"glass": true,
+					"image-name": "Threadrinth mark.svg",
+					"name": "Threadrinth mark",
+					"opacity-specializations": [
+						{
+							"appearance": "tinted",
+							"value": 1
+						}
+					],
+					"position": {
+						"scale": 1.6,
+						"translation-in-points": [0, 0]
+					}
+				}
+			],
+			"lighting": "individual",
+			"opacity-specializations": [
+				{
+					"value": 1
+				},
+				{
+					"appearance": "tinted",
+					"value": 1
+				}
+			],
+			"shadow": {
+				"kind": "neutral",
+				"opacity": 0.5
+			},
+			"specular": true,
+			"translucency": {
+				"enabled": true,
+				"value": 0.5
+			}
+		}
+	],
+	"supported-platforms": {
+		"circles": ["watchOS"],
+		"squares": "shared"
+	}
+}
