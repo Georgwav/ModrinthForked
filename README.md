@@ -53,7 +53,7 @@ Windows releases are built by GitHub Actions from this repository. Only builds o
 
 Changes to `main` only land through pull requests.
 
-**Privacy:** Threadrinth connects to Modrinth (mods and modpacks), Mojang and Microsoft (sign-in, game files, skins) and GitHub (app updates) to work. Modrinth's anonymous usage statistics can be turned off in Settings → Privacy. Threadrinth itself collects nothing.
+**Privacy:** Threadrinth connects to Modrinth (mods and modpacks), Mojang and Microsoft (sign-in, game files, skins) and GitHub (app updates) to work. Modrinth's anonymous usage statistics are off by default and can be turned on in Settings → Privacy. Threadrinth itself collects nothing.
 
 ## License
 

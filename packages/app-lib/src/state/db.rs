@@ -287,6 +287,20 @@ mod tests {
             .unwrap()
     }
 
+    /// Modrinth's usage statistics are off in a new Threadrinth install.
+    #[tokio::test]
+    async fn telemetry_is_off_by_default() {
+        let pool = memory_pool().await;
+        sqlx::migrate!().run(&pool).await.unwrap();
+
+        let telemetry: i64 =
+            sqlx::query_scalar("SELECT telemetry FROM settings")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(telemetry, 0);
+    }
+
     /// A database migrated by a build whose migration files had the other
     /// line endings (Windows vs Linux) must still open.
     #[tokio::test]
