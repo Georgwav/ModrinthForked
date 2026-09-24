@@ -1,0 +1,79 @@
+// Threadrinth themes. Each one is Modrinth's dark or light theme with its own
+// surfaces and text colors, the same way `.oled-mode` builds on `.dark-mode`,
+// so everything styled for dark or light keeps working. `use-theme.ts` also
+// puts the base theme's class on <html> for component styles that check it.
+
+.ember-mode {
+	@extend .dark-mode;
+	--surface-1: #1a1410;
+	--surface-1-5: #1d1712;
+	--surface-2: #211914;
+	--surface-2-5: #251c16;
+	--surface-3: #2a2019;
+	--surface-4: #362a20;
+	--surface-5: #46372a;
+
+	--color-text-primary: #fff4e8;
+	--color-text-default: #d9c3aa;
+	--color-text-tertiary: #a8917b;
+	--color-button-border: rgba(230, 200, 170, 0.12);
+	--color-divider-dark: #6b5847;
+	--color-gradient-button-bg: linear-gradient(180deg, #46372a 0%, #3d3024 100%);
+	--splash-tint-bottom: rgba(43, 28, 17, 0.5);
+}
+
+.orchid-mode {
+	@extend .dark-mode;
+	--surface-1: #1b1118;
+	--surface-1-5: #1e131b;
+	--surface-2: #22161f;
+	--surface-2-5: #271924;
+	--surface-3: #2c1c28;
+	--surface-4: #3a2534;
+	--surface-5: #4a2f42;
+
+	--color-text-primary: #fdf0f7;
+	--color-text-default: #dcbacb;
+	--color-text-tertiary: #ae8ea0;
+	--color-button-border: rgba(230, 190, 215, 0.12);
+	--color-divider-dark: #735a69;
+	--color-gradient-button-bg: linear-gradient(180deg, #4a2f42 0%, #402839 100%);
+	--splash-tint-bottom: rgba(43, 17, 35, 0.5);
+}
+
+.amethyst-mode {
+	@extend .dark-mode;
+	--surface-1: #120e1f;
+	--surface-1-5: #151023;
+	--surface-2: #181327;
+	--surface-2-5: #1c162c;
+	--surface-3: #1f1932;
+	--surface-4: #292142;
+	--surface-5: #352b54;
+
+	--color-text-primary: #f3effe;
+	--color-text-default: #c3b8de;
+	--color-text-tertiary: #978cb4;
+	--color-button-border: rgba(200, 185, 240, 0.12);
+	--color-divider-dark: #5f5680;
+	--color-gradient-button-bg: linear-gradient(180deg, #352b54 0%, #2e2549 100%);
+	--splash-tint-bottom: rgba(24, 17, 48, 0.5);
+}
+
+.sand-mode {
+	@extend .light-mode;
+	--surface-1: #ece3d4;
+	--surface-1-5: #efe7d9;
+	--surface-2: #f5eee2;
+	--surface-2-5: #f1e9dc;
+	--surface-3: #fbf6ee;
+	--surface-4: #fffaf2;
+	--surface-5: #dccfb9;
+
+	--color-text-primary: #2a1f14;
+	--color-text-default: #4f3f2f;
+	--color-text-tertiary: #6f5d4a;
+	--color-button-border: rgba(120, 90, 50, 0.3);
+	--color-gradient-button-bg: linear-gradient(180deg, #fffaf2 0%, #eadfcc 100%);
+	--splash-tint-bottom: rgba(236, 214, 180, 0.563);
+}

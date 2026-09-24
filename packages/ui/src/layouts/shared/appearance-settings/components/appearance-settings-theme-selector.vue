@@ -38,6 +38,22 @@ const themeLabels = defineMessages({
 		id: 'settings.display.theme.retro',
 		defaultMessage: 'Retro',
 	},
+	ember: {
+		id: 'settings.display.theme.ember',
+		defaultMessage: 'Ember',
+	},
+	sand: {
+		id: 'settings.display.theme.sand',
+		defaultMessage: 'Sand',
+	},
+	orchid: {
+		id: 'settings.display.theme.orchid',
+		defaultMessage: 'Orchid',
+	},
+	amethyst: {
+		id: 'settings.display.theme.amethyst',
+		defaultMessage: 'Amethyst',
+	},
 })
 
 const themeTooltips = defineMessages({

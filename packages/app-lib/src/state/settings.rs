@@ -446,6 +446,10 @@ pub enum Theme {
     Oled,
     Retro,
     System,
+    Ember,
+    Sand,
+    Orchid,
+    Amethyst,
 }
 
 impl Theme {
@@ -456,6 +460,10 @@ impl Theme {
             Theme::Oled => "oled",
             Theme::Retro => "retro",
             Theme::System => "system",
+            Theme::Ember => "ember",
+            Theme::Sand => "sand",
+            Theme::Orchid => "orchid",
+            Theme::Amethyst => "amethyst",
         }
     }
 
@@ -466,6 +474,10 @@ impl Theme {
             "oled" => Theme::Oled,
             "retro" => Theme::Retro,
             "system" => Theme::System,
+            "ember" => Theme::Ember,
+            "sand" => Theme::Sand,
+            "orchid" => Theme::Orchid,
+            "amethyst" => Theme::Amethyst,
             _ => Theme::Dark,
         }
     }
