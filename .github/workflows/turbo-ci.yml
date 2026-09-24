@@ -116,6 +116,11 @@ jobs:
       - name: Lint and test
         run: pnpm turbo run lint test --continue --filter=@modrinth/app... --filter=@modrinth/app-frontend... --filter=@modrinth/app-lib... --filter='!@modrinth/blog'
 
+      # Boots the launcher core against a temporary folder and checks folder
+      # instances together with mod updates, renames, copies and synced options.
+      - name: Instance end-to-end test
+        run: cargo test -p theseus --lib scan_instances_e2e -- --ignored
+
       # The upstream `i18n-icu-contract prune-local` check is left out: it syncs
       # with Modrinth's Crowdin project and reads the removed website's catalogs.
       - name: Verify intl:extract has been run

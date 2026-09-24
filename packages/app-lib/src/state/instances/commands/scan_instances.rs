@@ -483,16 +483,12 @@ async fn write_cfg_for_instance(
     dir: &Path,
     pool: &SqlitePool,
 ) -> crate::Result<()> {
-    let Some(mut cfg) = cfg_from_row(instance_id, pool).await? else {
+    // The file always carries the id of the row it belongs to. Installs
+    // sharing a folder agree on it (imports reuse the id from the file), and
+    // a copied folder stops pointing at the instance it was copied from.
+    let Some(cfg) = cfg_from_row(instance_id, pool).await? else {
         return Ok(());
     };
-    // Keep the id already in the file so installs sharing this folder do not
-    // keep overwriting each other's id.
-    if let CfgRead::Parsed(existing) = read_instance_cfg(dir).await?
-        && existing.id.is_some()
-    {
-        cfg.id = existing.id;
-    }
     write_instance_cfg(dir, &cfg).await?;
 
     Ok(())
