@@ -59,6 +59,7 @@ pub use self::tunnel::*;
 pub mod db;
 pub(crate) mod db_backup;
 mod mr_auth;
+pub(crate) mod shared_app_db;
 
 pub use self::mr_auth::*;
 
@@ -339,12 +340,31 @@ impl State {
                 })?;
         let store_lock =
             content_store::ContentStore::lock_process(&settings_dir).await?;
-        let pool = db::connect(&app_identifier).await?;
+        let mut pool = db::connect(&app_identifier).await?;
 
         legacy_converter::migrate_legacy_data(&pool).await?;
 
         tracing::info!("Fetching app settings");
         let mut settings = Settings::get(&pool).await?;
+
+        // With a custom app folder, the database lives in it (shared by every
+        // install using the folder); see `shared_app_db`.
+        if let Some(shared) = shared_app_db::adopt_custom_folder(
+            &settings_dir,
+            settings.custom_dir.as_deref(),
+            &pool,
+        )
+        .await?
+        {
+            pool.close().await;
+            pool = db::connect_at(&shared).await?;
+            settings = Settings::get(&pool).await?;
+        }
+        if let Some(folder) = shared_app_db::shared_folder(&settings_dir) {
+            let folder = folder.to_string_lossy().into_owned();
+            settings.custom_dir = Some(folder.clone());
+            settings.prev_custom_dir = Some(folder);
+        }
 
         let fetch_semaphore =
             FetchSemaphore(Semaphore::new(settings.max_concurrent_downloads));

@@ -30,7 +30,7 @@ use chrono::Utc;
 use serde::Serialize;
 use sqlx::SqlitePool;
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use uuid::Uuid;
 
@@ -148,7 +148,7 @@ pub(crate) async fn scan_instances_folder(
         }
     }
 
-    add_missing_icons(&instances_dir, &modrinth_app, state).await;
+    sync_folder_icons(&instances_dir, &modrinth_app, state).await;
 
     if report.changed() || !report.skipped.is_empty() {
         tracing::info!(
@@ -177,17 +177,26 @@ pub(crate) async fn scan_instances_folder(
     Ok(report)
 }
 
+/// Whether the instance has an icon file this install can show. A path from
+/// another install (for example another OS sharing the app folder) counts as
+/// no icon.
 fn has_icon(instance: &Instance) -> bool {
     instance
         .icon_path
         .as_deref()
-        .is_some_and(|icon| !icon.is_empty())
+        .is_some_and(|icon| !icon.is_empty() && Path::new(icon).is_file())
 }
 
-/// Gives instances without an icon the one the official Modrinth App shows
-/// for the same folder, or the folder's own `icon.png`. The image is copied
-/// into Threadrinth's icon cache; the source is never changed.
-async fn add_missing_icons(
+/// The instance's icon, kept in its own folder so it travels with it.
+const FOLDER_ICON: &str = "icon.png";
+
+/// Keeps each instance's icon and its folder's `icon.png` in step. The
+/// folder wins: an `icon.png` that differs from the app's icon (dropped in, or
+/// changed on another install) becomes the icon. An instance whose folder has
+/// no `icon.png` gets its current icon written there; one without any icon
+/// gets the icon named in `instance.cfg` or shown by the official Modrinth
+/// App.
+async fn sync_folder_icons(
     instances_dir: &Path,
     modrinth_app: &HashMap<String, ModrinthAppInstance>,
     state: &State,
@@ -200,20 +209,64 @@ async fn add_missing_icons(
         }
     };
 
-    for row in rows.iter().filter(|row| !has_icon(row)) {
-        let folder_icon = instances_dir.join(&row.path).join("icon.png");
-        let Some(source) = modrinth_app
-            .get(&row.path)
-            .and_then(|instance| instance.icon.clone())
-            .or_else(|| folder_icon.is_file().then_some(folder_icon))
-        else {
+    let icon_cache = state.directories.caches_dir().join("icons");
+    for row in &rows {
+        let dir = instances_dir.join(&row.path);
+        if !dir.is_dir() {
+            continue;
+        }
+        let folder_icon = dir.join(FOLDER_ICON);
+        let current = row
+            .icon_path
+            .as_deref()
+            .map(Path::new)
+            .filter(|path| path.is_file());
+
+        let source = if folder_icon.is_file() {
+            if let Some(current) = current
+                && same_file_content(current, &folder_icon).await
+            {
+                continue;
+            }
+            Some(IconSource::File(folder_icon))
+        } else if let Some(current) = current {
+            if let Err(error) = write_folder_icon(&dir, Some(current)).await {
+                tracing::warn!(
+                    "Could not save the icon into {:?}: {error}",
+                    row.path
+                );
+            }
+            continue;
+        } else {
+            let from_cfg = match read_instance_cfg(&dir).await {
+                Ok(CfgRead::Parsed(cfg)) => cfg
+                    .icon
+                    .as_deref()
+                    .map(|name| icon_cache.join(name))
+                    .filter(|path| path.is_file()),
+                _ => None,
+            };
+            from_cfg.map(IconSource::Cached).or_else(|| {
+                modrinth_app
+                    .get(&row.path)
+                    .and_then(|instance| instance.icon.clone())
+                    .map(IconSource::File)
+            })
+        };
+        let Some(source) = source else {
             continue;
         };
 
         let result = async {
-            let cached =
-                crate::api::instance::cache_icon_from_path(&source, state)
-                    .await?;
+            let cached = match &source {
+                IconSource::Cached(path) => path.clone(),
+                IconSource::File(path) => {
+                    crate::api::instance::cache_icon_from_path(path, state)
+                        .await?
+                }
+            };
+            // Saving the icon also writes it into the folder (see
+            // `sync_instance_cfg`).
             super::edit_instance::edit_instance(
                 &row.id,
                 EditInstance {
@@ -228,12 +281,50 @@ async fn add_missing_icons(
         .await;
         if let Err(error) = result {
             tracing::warn!(
-                "Could not use {} as the icon of {:?}: {error}",
-                source.display(),
+                "Could not update the icon of {:?}: {error}",
                 row.path
             );
         }
     }
+}
+
+enum IconSource {
+    /// Already in the app's icon cache.
+    Cached(PathBuf),
+    /// Any image, cached (and normalized) first.
+    File(PathBuf),
+}
+
+async fn same_file_content(a: &Path, b: &Path) -> bool {
+    match (tokio::fs::read(a).await, tokio::fs::read(b).await) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    }
+}
+
+/// Makes the folder's `icon.png` match the instance's icon: a copy of it, or
+/// no file when the instance has no icon.
+async fn write_folder_icon(
+    dir: &Path,
+    icon: Option<&Path>,
+) -> crate::Result<()> {
+    let target = dir.join(FOLDER_ICON);
+    match icon {
+        Some(icon) => {
+            if same_file_content(icon, &target).await {
+                return Ok(());
+            }
+            let temporary = dir.join(format!("{FOLDER_ICON}.tmp"));
+            crate::util::io::copy(icon, &temporary).await?;
+            crate::util::io::rename_or_move(&temporary, &target).await?;
+        }
+        None => {
+            if target.is_file() {
+                crate::util::io::remove_file(&target).await?;
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Turns off queueing installs for scanned instances; the end-to-end test
@@ -602,6 +693,7 @@ async fn apply_cfg_to_row(
 
 async fn cfg_from_row(
     instance_id: &str,
+    dir: &Path,
     pool: &SqlitePool,
 ) -> crate::Result<Option<InstanceCfg>> {
     let Some(instance) =
@@ -628,7 +720,33 @@ async fn cfg_from_row(
         submitted_time_played: instance.submitted_time_played,
         recent_time_played: instance.recent_time_played,
         link: Some(link),
+        icon: match instance.icon_path.as_deref() {
+            Some(icon) if Path::new(icon).is_file() => cached_icon_name(icon),
+            // A path from another install sharing the folder (for example the
+            // other OS of a dual boot): keep the icon the file already names.
+            Some(icon) if !icon.is_empty() => {
+                match read_instance_cfg(dir).await? {
+                    CfgRead::Parsed(existing) => existing.icon,
+                    _ => None,
+                }
+            }
+            _ => None,
+        },
     }))
+}
+
+/// The file name of an icon in the app's icon cache (`caches/icons`), which
+/// every install sharing the app folder can resolve. Icons elsewhere are not
+/// recorded.
+fn cached_icon_name(icon_path: &str) -> Option<String> {
+    let path = Path::new(icon_path);
+    let in_cache = path
+        .parent()
+        .and_then(Path::file_name)
+        .is_some_and(|dir| dir == "icons");
+    in_cache
+        .then(|| path.file_name()?.to_str().map(str::to_string))
+        .flatten()
 }
 
 async fn write_cfg_for_instance(
@@ -639,7 +757,7 @@ async fn write_cfg_for_instance(
     // The file always carries the id of the row it belongs to. Installs
     // sharing a folder agree on it (imports reuse the id from the file), and
     // a copied folder stops pointing at the instance it was copied from.
-    let Some(cfg) = cfg_from_row(instance_id, pool).await? else {
+    let Some(cfg) = cfg_from_row(instance_id, dir, pool).await? else {
         return Ok(());
     };
     write_instance_cfg(dir, &cfg).await?;
@@ -653,7 +771,7 @@ pub(crate) async fn sync_instance_cfg(instance_id: &str, pool: &SqlitePool) {
     let Some(directories) = DirectoryInfo::global_handle_if_ready() else {
         return;
     };
-    let result = async {
+    let result: crate::Result<()> = async {
         let Some(path) =
             instance_rows::get_instance_path_by_id(instance_id, pool).await?
         else {
@@ -663,7 +781,27 @@ pub(crate) async fn sync_instance_cfg(instance_id: &str, pool: &SqlitePool) {
         if !dir.is_dir() {
             return Ok(());
         }
-        write_cfg_for_instance(instance_id, &dir, pool).await
+        write_cfg_for_instance(instance_id, &dir, pool).await?;
+
+        // The icon lives in the folder too, so a change made in the app
+        // reaches every install using the folder.
+        if let Some(instance) =
+            instance_rows::get_instance_by_id(instance_id, pool).await?
+        {
+            match instance
+                .icon_path
+                .as_deref()
+                .filter(|icon| !icon.is_empty())
+            {
+                None => write_folder_icon(&dir, None).await?,
+                Some(icon) if Path::new(icon).is_file() => {
+                    write_folder_icon(&dir, Some(Path::new(icon))).await?;
+                }
+                // An icon path from another install: leave the folder alone.
+                Some(_) => {}
+            }
+        }
+        Ok(())
     }
     .await;
 

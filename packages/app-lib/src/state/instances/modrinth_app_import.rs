@@ -245,6 +245,7 @@ fn to_instance(
         submitted_time_played: playtime("submitted_time_played"),
         recent_time_played: playtime("recent_time_played"),
         link,
+        icon: None,
     };
     Some((path, ModrinthAppInstance { cfg, icon }))
 }

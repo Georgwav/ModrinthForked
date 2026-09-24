@@ -309,6 +309,12 @@ impl DirectoryInfo {
         settings.custom_dir = Some(destination.to_string_lossy().into_owned());
         settings.prev_custom_dir.clone_from(&settings.custom_dir);
         settings.update(pool).await?;
+        crate::state::shared_app_db::app_folder_changed(
+            &initial,
+            &destination,
+            pool,
+        )
+        .await?;
         if let Some(previous) = &previous
             && moving
         {
