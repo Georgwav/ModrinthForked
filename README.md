@@ -4,6 +4,11 @@ A Minecraft launcher based on the [Modrinth App](https://github.com/modrinth/cod
 
 > Not affiliated with or endorsed by Modrinth / Rinth, Inc.
 
+<p>
+  <img src="branding/screenshots/library.webp" alt="Threadrinth library with instances grouped by game version, in the Ember theme" width="49%">
+  <img src="branding/screenshots/startup.webp" alt="Threadrinth starting up" width="49%">
+</p>
+
 ## What's different
 
 - **Instance folders just work.** Drop an instance folder into the instances folder and click **Refresh**. It shows up ready to play, like in Prism Launcher.
