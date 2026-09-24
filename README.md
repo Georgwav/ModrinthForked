@@ -44,6 +44,17 @@ pnpm app:dev
 
 Needs Node.js, pnpm, Rust and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/). `main` is protected, so open a pull request from a fork.
 
+## Code signing policy
+
+Windows releases are built by GitHub Actions from this repository. Only builds of `main` are signed.
+
+- **Committers and reviewers:** [Georgwav](https://github.com/Georgwav)
+- **Approvers:** [Georgwav](https://github.com/Georgwav)
+
+Changes to `main` only land through pull requests.
+
+**Privacy:** Threadrinth connects to Modrinth (mods and modpacks), Mojang and Microsoft (sign-in, game files, skins) and GitHub (app updates) to work. Modrinth's anonymous usage statistics can be turned off in Settings → Privacy. Threadrinth itself collects nothing.
+
 ## License
 
 GPL-3.0 like upstream; other packages keep their own licenses (see [COPYING.md](COPYING.md)). Modrinth's branding has been removed. The Threadrinth logo is original artwork.

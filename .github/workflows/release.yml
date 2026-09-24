@@ -149,3 +149,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release edit "v${{ needs.version.outputs.version }}" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+
+  # Opens the pull request to microsoft/winget-pkgs that adds this version.
+  # Needs the WINGET_TOKEN secret (a classic token with the public_repo scope,
+  # from an account with a fork of microsoft/winget-pkgs); skipped without it.
+  # The first version has to be submitted by hand.
+  winget:
+    name: Update winget package
+    needs: [version, publish]
+    runs-on: ubuntu-latest
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+    steps:
+      - name: Submit to winget
+        if: env.WINGET_TOKEN != ''
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: Georgwav.Threadrinth
+          installers-regex: '_x64-setup\.exe$'
+          release-tag: v${{ needs.version.outputs.version }}
+          token: ${{ secrets.WINGET_TOKEN }}
