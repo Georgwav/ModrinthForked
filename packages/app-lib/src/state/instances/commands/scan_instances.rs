@@ -177,11 +177,14 @@ pub(crate) async fn scan_instances_folder(
     Ok(report)
 }
 
+/// Whether the instance has an icon file this install can show. A path from
+/// another install (for example another OS sharing the app folder) counts as
+/// no icon.
 fn has_icon(instance: &Instance) -> bool {
     instance
         .icon_path
         .as_deref()
-        .is_some_and(|icon| !icon.is_empty())
+        .is_some_and(|icon| !icon.is_empty() && Path::new(icon).is_file())
 }
 
 /// Gives instances without an icon the one the official Modrinth App shows
@@ -200,8 +203,43 @@ async fn add_missing_icons(
         }
     };
 
+    let icon_cache = state.directories.caches_dir().join("icons");
     for row in rows.iter().filter(|row| !has_icon(row)) {
-        let folder_icon = instances_dir.join(&row.path).join("icon.png");
+        let dir = instances_dir.join(&row.path);
+
+        // The icon named in instance.cfg is already in the shared icon cache.
+        if let Ok(CfgRead::Parsed(cfg)) = read_instance_cfg(&dir).await
+            && let Some(cached) = cfg
+                .icon
+                .as_deref()
+                .map(|name| icon_cache.join(name))
+                .filter(|path| path.is_file())
+        {
+            let result = async {
+                super::edit_instance::edit_instance(
+                    &row.id,
+                    EditInstance {
+                        icon_path: Some(Some(
+                            cached.to_string_lossy().to_string(),
+                        )),
+                        ..EditInstance::default()
+                    },
+                    &state.pool,
+                )
+                .await?;
+                emit_instance(&row.id, InstancePayloadType::Edited).await
+            }
+            .await;
+            if let Err(error) = result {
+                tracing::warn!(
+                    "Could not restore the icon of {:?}: {error}",
+                    row.path
+                );
+            }
+            continue;
+        }
+
+        let folder_icon = dir.join("icon.png");
         let Some(source) = modrinth_app
             .get(&row.path)
             .and_then(|instance| instance.icon.clone())
@@ -602,6 +640,7 @@ async fn apply_cfg_to_row(
 
 async fn cfg_from_row(
     instance_id: &str,
+    dir: &Path,
     pool: &SqlitePool,
 ) -> crate::Result<Option<InstanceCfg>> {
     let Some(instance) =
@@ -628,7 +667,33 @@ async fn cfg_from_row(
         submitted_time_played: instance.submitted_time_played,
         recent_time_played: instance.recent_time_played,
         link: Some(link),
+        icon: match instance.icon_path.as_deref() {
+            Some(icon) if Path::new(icon).is_file() => cached_icon_name(icon),
+            // A path from another install sharing the folder (for example the
+            // other OS of a dual boot): keep the icon the file already names.
+            Some(icon) if !icon.is_empty() => {
+                match read_instance_cfg(dir).await? {
+                    CfgRead::Parsed(existing) => existing.icon,
+                    _ => None,
+                }
+            }
+            _ => None,
+        },
     }))
+}
+
+/// The file name of an icon in the app's icon cache (`caches/icons`), which
+/// every install sharing the app folder can resolve. Icons elsewhere are not
+/// recorded.
+fn cached_icon_name(icon_path: &str) -> Option<String> {
+    let path = Path::new(icon_path);
+    let in_cache = path
+        .parent()
+        .and_then(Path::file_name)
+        .is_some_and(|dir| dir == "icons");
+    in_cache
+        .then(|| path.file_name()?.to_str().map(str::to_string))
+        .flatten()
 }
 
 async fn write_cfg_for_instance(
@@ -639,7 +704,7 @@ async fn write_cfg_for_instance(
     // The file always carries the id of the row it belongs to. Installs
     // sharing a folder agree on it (imports reuse the id from the file), and
     // a copied folder stops pointing at the instance it was copied from.
-    let Some(cfg) = cfg_from_row(instance_id, pool).await? else {
+    let Some(cfg) = cfg_from_row(instance_id, dir, pool).await? else {
         return Ok(());
     };
     write_instance_cfg(dir, &cfg).await?;

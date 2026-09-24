@@ -353,22 +353,43 @@ async fn folder_instances_work_with_launcher_features() {
     assert!(profiles.join("Legacy/icon.png").is_file(), "source kept");
     println!("icon from folder: ok");
 
-    // --- Icons -----------------------------------------------------------
-    // A folder's own icon.png becomes the icon of an instance without one.
-    let mut icon = Vec::new();
-    image::RgbaImage::from_pixel(16, 16, image::Rgba([255, 160, 0, 255]))
-        .write_to(
-            &mut std::io::Cursor::new(&mut icon),
-            image::ImageFormat::Png,
-        )
-        .unwrap();
-    write(&profiles.join("Legacy/icon.png"), &icon);
+    // The icon is recorded in instance.cfg, so another install sharing the
+    // app folder (e.g. the other OS of a dual boot) finds it again even
+    // though the icon path in its own database doesn't exist there.
     api::refresh().await.unwrap();
-    let legacy = instance_by_path("Legacy").await.unwrap();
-    let icon_path = legacy.instance.icon_path.expect("icon from icon.png");
-    assert!(Path::new(&icon_path).is_file());
-    assert!(profiles.join("Legacy/icon.png").is_file(), "source kept");
-    println!("icon from folder: ok");
+    let icon_name = Path::new(&icon_path)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
+    assert_eq!(
+        cfg(&profiles.join("Legacy")).await.icon.as_deref(),
+        Some(icon_name.as_str())
+    );
+    std::fs::remove_file(profiles.join("Legacy/icon.png")).unwrap();
+    let state = State::get().await.unwrap();
+    crate::state::edit_instance(
+        &legacy.instance.id,
+        EditInstance {
+            icon_path: Some(Some(
+                "/other-os/caches/icons/missing.png".to_string(),
+            )),
+            ..EditInstance::default()
+        },
+        &state.pool,
+    )
+    .await
+    .unwrap();
+    api::refresh().await.unwrap();
+    let restored = instance_by_path("Legacy")
+        .await
+        .unwrap()
+        .instance
+        .icon_path
+        .unwrap();
+    assert_eq!(Path::new(&restored), Path::new(&icon_path));
+    println!("icon from instance.cfg on another install: ok");
 
     // --- Install without Repair ----------------------------------------
     // A new import is queued for install, so Play works right away.

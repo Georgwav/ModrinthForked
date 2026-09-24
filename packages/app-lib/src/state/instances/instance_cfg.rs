@@ -34,6 +34,10 @@ const KEY_MODIFIED: &str = "ModrinthModified";
 const KEY_SUBMITTED_TIME_PLAYED: &str = "ModrinthSubmittedTimePlayed";
 const KEY_RECENT_TIME_PLAYED: &str = "ModrinthRecentTimePlayed";
 const KEY_LINK: &str = "ModrinthLink";
+/// File name of the instance icon in the app folder's icon cache
+/// (`caches/icons`), which is named by content and so the same on every
+/// install sharing the app folder.
+const KEY_ICON: &str = "ModrinthIcon";
 
 /// Folders and files that mark a directory as a Minecraft instance.
 const INSTANCE_MARKERS: &[&str] = &[
@@ -61,6 +65,7 @@ pub(crate) struct InstanceCfg {
     pub submitted_time_played: u64,
     pub recent_time_played: u64,
     pub link: Option<InstanceLink>,
+    pub icon: Option<String>,
 }
 
 impl InstanceCfg {
@@ -114,6 +119,7 @@ impl InstanceCfg {
             link: doc
                 .get(KEY_LINK)
                 .and_then(|value| serde_json::from_str(value).ok()),
+            icon: non_empty(doc.get(KEY_ICON)),
         })
     }
 
@@ -156,6 +162,7 @@ impl InstanceCfg {
             &self.submitted_time_played.to_string(),
         );
         doc.set(KEY_RECENT_TIME_PLAYED, &self.recent_time_played.to_string());
+        doc.set_optional(KEY_ICON, self.icon.as_deref());
         doc.set_optional(
             KEY_LINK,
             self.link
@@ -294,6 +301,7 @@ pub(crate) fn infer_instance_cfg(
         submitted_time_played: 0,
         recent_time_played: 0,
         link: None,
+        icon: None,
     })
 }
 
@@ -818,6 +826,7 @@ mod tests {
             submitted_time_played: 100,
             recent_time_played: 20,
             link: Some(InstanceLink::Unmanaged),
+            icon: Some("0a1b2c.png".to_string()),
         }
     }
 
