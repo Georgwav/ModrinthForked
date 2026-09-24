@@ -19,6 +19,7 @@
 		@confirm="proceedRemoveWorld"
 	/>
 	<DesyncServerModal ref="desyncServerModal" @confirm="confirmDesyncServer" />
+	<TransferWorldModal ref="transferWorldModal" :instance="instance" @transferred="onWorldTransferred" />
 	<ReadyTransition :pending="worldsReadyPending">
 		<div v-if="dedupedWorlds.length > 0" class="flex flex-col gap-2">
 			<div class="flex flex-wrap items-center gap-2">
@@ -103,6 +104,7 @@
 					@delete="() => !isManagedServerWorld(world) && promptToRemoveWorld(world)"
 					@desync="() => world.type === 'server' && desyncServerModal?.show(world as ServerWorld)"
 					@open-folder="(world: SingleplayerWorld) => showWorldInFolder(instance.id, world.path)"
+					@transfer="() => world.type === 'singleplayer' && transferWorldModal?.show(world)"
 				/>
 			</div>
 		</div>
@@ -151,6 +153,7 @@ import ConfirmRemoveWorldModal from '@/components/ui/world/modal/ConfirmRemoveWo
 import DesyncServerModal from '@/components/ui/world/modal/DesyncServerModal.vue'
 import EditServerModal from '@/components/ui/world/modal/EditServerModal.vue'
 import EditWorldModal from '@/components/ui/world/modal/EditSingleplayerWorldModal.vue'
+import TransferWorldModal from '@/components/ui/world/modal/TransferWorldModal.vue'
 import WorldItem from '@/components/ui/world/WorldItem.vue'
 import { useAppEvent } from '@/composables/use-app-event'
 import { handleSevereError } from '@/composables/use-error.js'
@@ -244,6 +247,7 @@ const addServerModal = ref<InstanceType<typeof AddServerModal>>()
 const editServerModal = ref<InstanceType<typeof EditServerModal>>()
 const editWorldModal = ref<InstanceType<typeof EditWorldModal>>()
 const removeWorldModal = ref<InstanceType<typeof ConfirmRemoveWorldModal>>()
+const transferWorldModal = ref<InstanceType<typeof TransferWorldModal>>()
 const desyncServerModal = ref<InstanceType<typeof DesyncServerModal>>()
 
 const worldToRemove = ref<World | null>(null)
@@ -518,6 +522,12 @@ async function editWorld(path: string, name: string, removeIcon: boolean) {
 	} else {
 		handleError(new Error(`Error finding world in list, refreshing all worlds`))
 		await refreshAllWorlds()
+	}
+}
+
+function onWorldTransferred(world: SingleplayerWorld, moved: boolean) {
+	if (moved) {
+		worlds.value = worlds.value.filter((w) => w.type !== 'singleplayer' || w.path !== world.path)
 	}
 }
 

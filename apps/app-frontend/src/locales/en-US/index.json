@@ -935,6 +935,42 @@
   "app.instance.worlds.search-worlds-placeholder": {
     "message": "Search {count} worlds..."
   },
+  "app.instance.worlds.transfer.copied": {
+    "message": "World copied"
+  },
+  "app.instance.worlds.transfer.copy-button": {
+    "message": "Copy world"
+  },
+  "app.instance.worlds.transfer.done-description": {
+    "message": "{world} is now in {target}."
+  },
+  "app.instance.worlds.transfer.move": {
+    "message": "Move instead"
+  },
+  "app.instance.worlds.transfer.move-button": {
+    "message": "Move world"
+  },
+  "app.instance.worlds.transfer.move-description": {
+    "message": "Removes the world from this instance after copying it."
+  },
+  "app.instance.worlds.transfer.moved": {
+    "message": "World moved"
+  },
+  "app.instance.worlds.transfer.target": {
+    "message": "Instance"
+  },
+  "app.instance.worlds.transfer.target-placeholder": {
+    "message": "Choose an instance"
+  },
+  "app.instance.worlds.transfer.title": {
+    "message": "Copy to instance"
+  },
+  "app.instance.worlds.transfer.version-body": {
+    "message": "{target} uses Minecraft {targetVersion}, this instance uses {sourceVersion}. Opening a world in an older version than it was last played in can break it."
+  },
+  "app.instance.worlds.transfer.version-header": {
+    "message": "Different Minecraft version"
+  },
   "app.java-detection.cancel": {
     "message": "Cancel"
   },
@@ -1645,6 +1681,21 @@
   },
   "app.screenshots.sort.oldest": {
     "message": "Oldest"
+  },
+  "app.server-pack.exported": {
+    "message": "Server pack exported"
+  },
+  "app.server-pack.exported-description": {
+    "message": "{count, plural, one {# mod} other {# mods}} included{clientOnly, plural, =0 {} one {, # client-only mod left out} other {, # client-only mods left out}}. Run start.sh or start.bat to start the server; README.txt explains the rest."
+  },
+  "app.server-pack.exporting": {
+    "message": "Exporting server pack"
+  },
+  "app.server-pack.exporting-description": {
+    "message": "Collecting the mods and downloading the server launcher for {name}."
+  },
+  "app.server-pack.zip-files": {
+    "message": "Zip archive"
   },
   "app.settings.app-version": {
     "message": "Modrinth App {version}"
@@ -3725,6 +3776,9 @@
   "instance.action.export-modpack": {
     "message": "Export modpack"
   },
+  "instance.action.export-server-pack": {
+    "message": "Export server pack"
+  },
   "instance.action.launch-instance": {
     "message": "Launch instance"
   },
@@ -4441,6 +4495,9 @@
   },
   "instance.worlds.cant_connect": {
     "message": "Can't connect to server"
+  },
+  "instance.worlds.copy-to-instance": {
+    "message": "Copy to instance…"
   },
   "instance.worlds.copy_address": {
     "message": "Copy address"

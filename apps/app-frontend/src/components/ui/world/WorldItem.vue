@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
 	ClipboardCopyIcon,
+	CopyIcon,
 	EditIcon,
 	ExternalIcon,
 	EyeIcon,
@@ -72,7 +73,18 @@ const router = useRouter()
 const { addNotification } = injectNotificationManager()
 
 const emit = defineEmits<{
-	(e: 'play' | 'play-instance' | 'update' | 'stop' | 'refresh' | 'edit' | 'delete' | 'desync'): void
+	(
+		e:
+			| 'play'
+			| 'play-instance'
+			| 'update'
+			| 'stop'
+			| 'refresh'
+			| 'edit'
+			| 'delete'
+			| 'desync'
+			| 'transfer',
+	): void
 	(e: 'open-folder', world: SingleplayerWorld): void
 }>()
 
@@ -187,6 +199,10 @@ const messages = defineMessages({
 		defaultMessage: 'Failed to create shortcut',
 	},
 	moreOptions: { id: 'instance.worlds.more-options', defaultMessage: 'More options' },
+	copyToInstance: {
+		id: 'instance.worlds.copy-to-instance',
+		defaultMessage: 'Copy to instance…',
+	},
 	instanceLocked: {
 		id: 'instance.worlds.instance-locked',
 		defaultMessage: 'This instance has been locked',
@@ -379,6 +395,15 @@ const overflowOptions = computed((): ButtonMenuOption[] => [
 			: managed.value
 				? formatMessage(messages.linkedServer)
 				: undefined,
+	},
+	{
+		id: 'transfer',
+		label: formatMessage(messages.copyToInstance),
+		icon: CopyIcon,
+		shown: props.world.type === 'singleplayer' && !props.instanceId,
+		disabled: locked.value,
+		tooltip: locked.value ? formatMessage(messages.worldInUse) : undefined,
+		action: () => emit('transfer'),
 	},
 	{
 		id: 'open-folder',
