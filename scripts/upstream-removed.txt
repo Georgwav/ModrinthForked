@@ -1,0 +1,66 @@
+# Paths from modrinth/code that Threadrinth doesn't ship.
+# scripts/sync-upstream.sh deletes them again after every upstream merge,
+# so upstream changes to them never cause merge conflicts.
+
+# AI agent and editor configuration
+.agents
+standards
+AGENTS.md
+apps/app-frontend/AGENTS.md
+packages/api-client/AGENTS.md
+packages/ui/AGENTS.md
+.idea
+.github/instructions
+
+# Modrinth's own services (merge bot, translations, backend databases)
+.mergify.yml
+crowdin.yml
+docker-compose.yml
+.dockerignore
+.github/templates
+.github/ISSUE_TEMPLATE/2-web-bug.yml
+.github/ISSUE_TEMPLATE/3-hosting-bug.yml
+.github/ISSUE_TEMPLATE/4-api-bug.yml
+.github/ISSUE_TEMPLATE/1-app-bug.yml
+.github/ISSUE_TEMPLATE/5-feature-request.yml
+scripts/clone-labrinth-projects.mjs
+scripts/import-projects.py
+scripts/reset-db.sh
+scripts/seed-db.sh
+
+# Workflows that deploy to Modrinth's infrastructure
+.github/workflows/api-client-release.yml
+.github/workflows/cancel-pr-workflow-on-merge.yml
+.github/workflows/changelog-comment.yml
+.github/workflows/cmd-deploy.yml
+.github/workflows/daedalus-docker.yml
+.github/workflows/frontend-deploy.yml
+.github/workflows/frontend-docker.yml
+.github/workflows/frontend-preview.yml
+.github/workflows/i18n-pull.yml
+.github/workflows/i18n-push.yml
+.github/workflows/labrinth-build.yml
+.github/workflows/slash-cmds.yml
+.github/workflows/theseus-build.yml
+.github/workflows/theseus-release.yml
+
+# Modrinth branding (see COPYING.md)
+.github/assets
+
+# Apps that aren't the launcher: website, API server, docs, meta server
+apps/app-playground
+apps/daedalus_client
+apps/docs
+apps/frontend
+apps/labrinth
+
+# Packages only the website or API server use
+packages/component-derive
+packages/moderation
+packages/modrinth-log
+packages/modrinth-maxmind
+packages/modrinth-util
+packages/muralpay
+packages/neverbounce
+packages/sqlx-tracing
+packages/xredis
