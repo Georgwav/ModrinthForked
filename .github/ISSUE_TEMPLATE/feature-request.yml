@@ -6,7 +6,7 @@ body:
     attributes:
       label: Please confirm the following.
       options:
-        - label: I checked the [existing issues](https://github.com/Georgwav/Threadrinth/issues?q=is%3Aissue) and the [roadmap](https://github.com/Georgwav/Threadrinth/blob/main/ROADMAP.md)
+        - label: I checked the [existing issues](https://github.com/Georgwav/Threadrinth/issues?q=is%3Aissue)
           required: true
   - type: textarea
     attributes:
