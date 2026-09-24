@@ -1,0 +1,157 @@
+name: Upstream sync
+
+# Checks daily for a new Modrinth App release and merges it with
+# scripts/sync-upstream.sh into an `upstream-sync/<tag>` pull request. CI runs
+# on that PR; upstream-sync-merge.yml merges it and starts a release once CI is
+# green. If the merge has conflicts, an issue is opened instead.
+#
+# Needs the THREADRINTH_BOT_TOKEN secret: a fine-grained token with Contents,
+# Pull requests, Issues and Workflows (read and write) on this repository.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Modrinth tag to merge (default is the newest release)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.THREADRINTH_BOT_TOKEN }}
+    steps:
+      - name: Check token
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Add the THREADRINTH_BOT_TOKEN secret (see the comment at the top of this workflow)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.THREADRINTH_BOT_TOKEN }}
+
+      - name: Find a new Modrinth release
+        id: find
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          git remote add upstream https://github.com/modrinth/code.git
+          git fetch --quiet upstream --tags
+          current=$(cat scripts/upstream-version.txt)
+          target="$INPUT_REF"
+          if [ -z "$target" ]; then
+            target=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          fi
+          newest=$(printf '%s\n%s\n' "$current" "$target" | sort -V | tail -1)
+          if [ "$target" = "$current" ] || [ "$newest" != "$target" ]; then
+            echo "Already on Modrinth $current (newest: $target)."
+            exit 0
+          fi
+          branch="upstream-sync/$target"
+          if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null; then
+            echo "$branch already exists; its PR is in progress."
+            exit 0
+          fi
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        if: steps.find.outputs.target
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        if: steps.find.outputs.target
+        run: corepack enable
+
+      - name: Setup Rust toolchain
+        if: steps.find.outputs.target
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+
+      - name: Merge Modrinth ${{ steps.find.outputs.target }}
+        if: steps.find.outputs.target
+        id: merge
+        env:
+          TARGET: ${{ steps.find.outputs.target }}
+          BRANCH: ${{ steps.find.outputs.branch }}
+        run: |
+          git config user.name 'Threadrinth upstream sync'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$BRANCH"
+          ./scripts/sync-upstream.sh "$TARGET" || true
+          conflicts=$(git diff --name-only --diff-filter=U)
+          if [ -n "$conflicts" ]; then
+            {
+              echo 'conflicts<<EOF'
+              echo "$conflicts"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pnpm install --lockfile-only
+          cargo metadata --format-version 1 >/dev/null
+          echo "$TARGET" > scripts/upstream-version.txt
+          git add -A
+          git commit -m "Merge Modrinth App $TARGET"
+          git push origin "$BRANCH"
+
+      - name: Open pull request
+        if: steps.find.outputs.target && !steps.merge.outputs.conflicts
+        env:
+          TARGET: ${{ steps.find.outputs.target }}
+          BRANCH: ${{ steps.find.outputs.branch }}
+          CURRENT: ${{ steps.find.outputs.current }}
+        run: |
+          gh pr create --base main --head "$BRANCH" \
+            --title "Merge Modrinth App $TARGET" \
+            --body "Merges Modrinth App $TARGET (previously $CURRENT) using \`scripts/sync-upstream.sh\`.
+
+          [Modrinth's changes](https://github.com/modrinth/code/compare/$CURRENT...$TARGET)
+
+          This PR is merged automatically once CI passes, and a new Threadrinth release is built from it."
+
+      - name: Report conflicts
+        if: steps.merge.outputs.conflicts
+        env:
+          TARGET: ${{ steps.find.outputs.target }}
+          CONFLICTS: ${{ steps.merge.outputs.conflicts }}
+        run: |
+          title="Modrinth App $TARGET needs a manual merge"
+          if gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number' | grep -q .; then
+            echo "An issue already exists."
+            exit 0
+          fi
+          gh issue create --title "$title" --body "Merging Modrinth App $TARGET conflicts with Threadrinth's changes in:
+
+          \`\`\`
+          $CONFLICTS
+          \`\`\`
+
+          To merge it by hand:
+
+          \`\`\`sh
+          git switch -c upstream-sync/$TARGET origin/main
+          scripts/sync-upstream.sh $TARGET
+          # fix the files above, then follow the steps the script prints
+          echo $TARGET > scripts/upstream-version.txt
+          \`\`\`
+
+          Then open a PR from that branch."

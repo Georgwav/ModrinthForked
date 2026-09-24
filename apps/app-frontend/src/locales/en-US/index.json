@@ -3495,7 +3495,7 @@
     "message": "Modrinth App v{version} has finished downloading. Reload to update now, or automatically when you close Modrinth App."
   },
   "app.update-popup.body.linux": {
-    "message": "Modrinth App v{version} is available. Use your package manager to update for the latest features and fixes!"
+    "message": "Threadrinth v{version} is available. Download it from the Threadrinth releases page on GitHub."
   },
   "app.update-popup.body.metered": {
     "message": "Modrinth App v{version} is available now! Since you're on a metered network, we didn't automatically download it."

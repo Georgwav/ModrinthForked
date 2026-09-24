@@ -159,6 +159,7 @@ import {
 	syncedServersQueryOptions,
 } from '@/helpers/synced-options'
 import { syncedPackQueryOptions } from '@/helpers/synced-packs'
+import { THREADRINTH_RELEASES_URL, THREADRINTH_UPDATE_MANIFEST_URL } from '@/helpers/threadrinth'
 import { hasActivePride26Midas, hasMidasBadge } from '@/helpers/user-campaigns.ts'
 import { get_user_preferences } from '@/helpers/user-preferences.ts'
 import { parse_modrinth_user_link } from '@/helpers/users'
@@ -1844,7 +1845,7 @@ const updatePopupMessages = defineMessages({
 	linuxBody: {
 		id: 'app.update-popup.body.linux',
 		defaultMessage:
-			'Modrinth App v{version} is available. Use your package manager to update for the latest features and fixes!',
+			'Threadrinth v{version} is available. Download it from the Threadrinth releases page on GitHub.',
 	},
 	reload: {
 		id: 'app.update-popup.reload',
@@ -2022,7 +2023,7 @@ async function checkUpdates() {
 async function checkLinuxUpdates() {
 	try {
 		const [response, currentVersion] = await Promise.all([
-			fetch('https://launcher-files.modrinth.com/updates.json'),
+			fetch(THREADRINTH_UPDATE_MANIFEST_URL),
 			getVersion(),
 		])
 		const updates = await response.json()
@@ -2111,7 +2112,7 @@ async function installUpdate() {
 setAppUpdateActions({
 	download: downloadAvailableUpdate,
 	install: installUpdate,
-	changelog: () => openUrl('https://modrinth.com/news/changelog?filter=app'),
+	changelog: () => openUrl(THREADRINTH_RELEASES_URL),
 })
 
 async function openModrinthProjectLinkInApp(parsed) {
