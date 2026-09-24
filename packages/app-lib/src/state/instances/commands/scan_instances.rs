@@ -14,6 +14,7 @@ use crate::state::instances::instance_cfg::{
     self, CfgRead, InstanceCfg, infer_instance_cfg, is_nested_prism_instance,
     looks_like_instance, read_instance_cfg, write_instance_cfg,
 };
+use crate::state::instances::modrinth_app_import::load_modrinth_app_instances;
 use crate::state::instances::{
     ContentSet, ContentSetStatus, Instance, InstanceLaunchOverrides,
     InstanceLink,
@@ -104,6 +105,18 @@ pub(crate) async fn scan_instances_folder(
     }
     folders.sort();
 
+    let modrinth_app = if folders
+        .iter()
+        .any(|folder| !rows_by_path.contains_key(folder))
+    {
+        load_modrinth_app_instances(
+            &state.directories.settings_dir.join("app.db"),
+        )
+        .await
+    } else {
+        HashMap::new()
+    };
+
     for folder in folders {
         let dir = instances_dir.join(&folder);
         let result = match rows_by_path.get(&folder) {
@@ -115,6 +128,7 @@ pub(crate) async fn scan_instances_folder(
                     &folder,
                     &dir,
                     &instances_dir,
+                    &modrinth_app,
                     &mut rows_by_id,
                     state,
                     &mut report,
@@ -205,6 +219,7 @@ async fn import_unknown_folder(
     folder: &str,
     dir: &Path,
     instances_dir: &Path,
+    modrinth_app: &HashMap<String, InstanceCfg>,
     rows_by_id: &mut HashMap<String, Instance>,
     state: &State,
     report: &mut InstanceScanReport,
@@ -219,30 +234,35 @@ async fn import_unknown_folder(
                 ));
                 return Ok(());
             }
-            if matches!(read, CfgRead::Missing) && !looks_like_instance(dir) {
-                return Ok(());
-            }
-            let dir_owned = dir.to_path_buf();
-            let name = folder.to_string();
-            let inferred = tokio::task::spawn_blocking(move || {
-                infer_instance_cfg(&dir_owned, &name)
-            })
-            .await
-            .ok()
-            .flatten();
-            match inferred {
-                Some(cfg) => cfg,
-                None => {
-                    report.skipped.push((
+            if let Some(cfg) = modrinth_app.get(folder) {
+                cfg.clone()
+            } else {
+                if matches!(read, CfgRead::Missing) && !looks_like_instance(dir)
+                {
+                    return Ok(());
+                }
+                let dir_owned = dir.to_path_buf();
+                let name = folder.to_string();
+                let inferred = tokio::task::spawn_blocking(move || {
+                    infer_instance_cfg(&dir_owned, &name)
+                })
+                .await
+                .ok()
+                .flatten();
+                match inferred {
+                    Some(cfg) => cfg,
+                    None => {
+                        report.skipped.push((
                         folder.to_string(),
                         format!(
-                            "Minecraft version could not be detected; add {}={} to its {}",
+                            "Minecraft version could not be detected (no Modrinth App entry, world, log or pinned mods); add {}={} to its {}",
                             "ModrinthGameVersion",
                             "<version>",
                             instance_cfg::INSTANCE_CFG_FILE_NAME,
                         ),
                     ));
-                    return Ok(());
+                        return Ok(());
+                    }
                 }
             }
         }

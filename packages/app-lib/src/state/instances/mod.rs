@@ -8,6 +8,7 @@ pub(crate) use self::model::{StoredOption, StoredPreference};
 pub(crate) mod adapters;
 pub(crate) mod commands;
 pub(crate) mod instance_cfg;
+pub(crate) mod modrinth_app_import;
 pub use self::commands::{
     AppliedContentSetPatch, CreateInstance, EditInstance,
     InstanceLaunchOverridesPatch, InstanceMetadata, InstanceScanReport,
