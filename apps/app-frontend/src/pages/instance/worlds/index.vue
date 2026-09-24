@@ -19,7 +19,11 @@
 		@confirm="proceedRemoveWorld"
 	/>
 	<DesyncServerModal ref="desyncServerModal" @confirm="confirmDesyncServer" />
-	<TransferWorldModal ref="transferWorldModal" :instance="instance" @transferred="onWorldTransferred" />
+	<TransferWorldModal
+		ref="transferWorldModal"
+		:instance="instance"
+		@transferred="onWorldTransferred"
+	/>
 	<ReadyTransition :pending="worldsReadyPending">
 		<div v-if="dedupedWorlds.length > 0" class="flex flex-col gap-2">
 			<div class="flex flex-wrap items-center gap-2">
