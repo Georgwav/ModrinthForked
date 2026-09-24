@@ -25,7 +25,7 @@ while IFS= read -r path || [ -n "$path" ]; do
 	'' | '#'*) continue ;;
 	/* | *..*) echo "Skipping unsafe path: $path" >&2 && continue ;;
 	esac
-	git rm -r -q --ignore-unmatch -- "$path" >/dev/null 2>&1 || true
+	git rm -r -f -q --ignore-unmatch -- "$path" >/dev/null
 	rm -rf -- "$path"
 done <scripts/upstream-removed.txt
 
