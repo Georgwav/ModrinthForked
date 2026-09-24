@@ -185,6 +185,7 @@ img {
 }
 
 @import '@modrinth/assets/omorphia.scss';
+@import './accent.scss';
 
 input {
 	border-radius: var(--size-rounded-sm);

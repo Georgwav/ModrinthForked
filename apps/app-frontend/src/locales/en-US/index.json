@@ -1649,6 +1649,42 @@
   "app.settings.app-version": {
     "message": "Modrinth App {version}"
   },
+  "app.settings.appearance.accent.description": {
+    "message": "Pick the highlight color used across the app. It works with every theme."
+  },
+  "app.settings.appearance.accent.preset.amber": {
+    "message": "Amber"
+  },
+  "app.settings.appearance.accent.preset.blue": {
+    "message": "Blue"
+  },
+  "app.settings.appearance.accent.preset.cyan": {
+    "message": "Cyan"
+  },
+  "app.settings.appearance.accent.preset.green": {
+    "message": "Green"
+  },
+  "app.settings.appearance.accent.preset.pink": {
+    "message": "Pink"
+  },
+  "app.settings.appearance.accent.preset.purple": {
+    "message": "Purple"
+  },
+  "app.settings.appearance.accent.preset.red": {
+    "message": "Red"
+  },
+  "app.settings.appearance.accent.preset.yellow": {
+    "message": "Yellow"
+  },
+  "app.settings.appearance.accent.reset": {
+    "message": "Reset to amber"
+  },
+  "app.settings.appearance.accent.slider": {
+    "message": "Accent hue"
+  },
+  "app.settings.appearance.accent.title": {
+    "message": "Accent color"
+  },
   "app.settings.default-instance-options.environment-variables.description": {
     "message": "Environment variables set when launching an instance."
   },

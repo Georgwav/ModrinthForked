@@ -77,6 +77,8 @@ const sidebarPreferenceValues = sidebarPreferences?.value
 			</AppearanceSettingRow>
 		</section>
 
+		<slot name="after-color-theme" />
+
 		<section v-if="projectLayouts" class="mt-8 border-0 border-t border-solid border-divider pt-6">
 			<div class="flex flex-col gap-1">
 				<h2 class="m-0 text-xl font-semibold text-contrast">

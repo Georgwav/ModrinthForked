@@ -9,6 +9,7 @@ import {
 import { platform } from '@tauri-apps/plugin-os'
 import { computed, inject, onBeforeUnmount, onMounted, watch } from 'vue'
 
+import AccentColorSetting from '@/components/ui/settings/display/AccentColorSetting.vue'
 import { useAppSettings } from '@/composables/use-app-settings.ts'
 import { type ColorTheme, isDarkTheme, useTheme } from '@/composables/use-theme.ts'
 import { type AppSettings, get, set } from '@/helpers/settings.ts'
@@ -158,5 +159,9 @@ provideAppearanceSettings({
 </script>
 
 <template>
-	<AppearanceSettingsLayout />
+	<AppearanceSettingsLayout>
+		<template #after-color-theme>
+			<AccentColorSetting />
+		</template>
+	</AppearanceSettingsLayout>
 </template>

@@ -5,6 +5,7 @@ import { VueQueryPlugin } from '@tanstack/vue-query'
 import { createApp } from 'vue'
 
 import App from '@/App.vue'
+import { useAccentColor } from '@/composables/use-accent-color'
 import { overlayScrollbarsDirective } from '@/directives/overlayScrollbars'
 import { setupErrorReporting } from '@/helpers/error-reporting'
 import { debugStartup, traceStartupStep } from '@/helpers/startup-debug'
@@ -13,6 +14,7 @@ import i18nDebugPlugin from '@/plugins/i18n-debug'
 import router from '@/routes'
 
 debugStartup('Frontend entry module evaluated')
+useAccentColor()
 const app = createApp(App)
 setupErrorReporting(app, router)
 
