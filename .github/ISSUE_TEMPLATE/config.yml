@@ -1,8 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 🫶 Support portal
-    about: Get support using through our support website.
+  - name: Problems with Modrinth itself
+    about: Issues with modrinth.com, Modrinth accounts or projects hosted there go to Modrinth, not here.
     url: https://support.modrinth.com
-  - name: 💬 Chat on Discord
-    about: Join our Discord server to chat about Modrinth.
-    url: https://discord.modrinth.com

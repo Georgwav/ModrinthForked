@@ -1,0 +1,47 @@
+name: Upstream sync (merge)
+
+# Merges an `upstream-sync/<tag>` pull request once CI passed on it, then
+# starts a Threadrinth release. Only branches in this repository qualify.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'upstream-sync/') &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge pull request
+        env:
+          GH_TOKEN: ${{ secrets.THREADRINTH_BOT_TOKEN }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state open \
+            --json number,headRefOid --jq ".[] | select(.headRefOid == \"$SHA\") | .number")
+          if [ -z "$pr" ]; then
+            echo "No open PR for $BRANCH at $SHA; it changed after CI ran."
+            exit 0
+          fi
+          pending=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/check-runs" --paginate \
+            --jq '[.check_runs[] | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length')
+          if [ "$pending" != "0" ]; then
+            echo "::error::Other checks on $SHA are not green yet; merge PR #$pr by hand when they are."
+            exit 1
+          fi
+          gh pr merge "$pr" --repo "$GITHUB_REPOSITORY" --merge --admin --delete-branch
+
+      - name: Start release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref main

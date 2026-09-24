@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an idea for Threadrinth.
+type: 'feature'
+body:
+  - type: checkboxes
+    attributes:
+      label: Please confirm the following.
+      options:
+        - label: I checked the [existing issues](https://github.com/Georgwav/Threadrinth/issues?q=is%3Aissue) and the [roadmap](https://github.com/Georgwav/Threadrinth/blob/main/ROADMAP.md)
+          required: true
+  - type: textarea
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true

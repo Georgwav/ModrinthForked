@@ -1,0 +1,151 @@
+name: Release
+
+# Builds signed Threadrinth installers for Windows and Linux and publishes them
+# as a GitHub release, together with the latest.json manifest the in-app
+# updater reads. Runs when a v* tag is pushed, when started by hand, or after
+# the upstream sync merged a new Modrinth version.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release (e.g. 0.21.1). Leave empty for the next patch version.
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Pick version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      upstream: ${{ steps.version.outputs.upstream }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          elif [ -n "$INPUT_VERSION" ]; then
+            version="${INPUT_VERSION#v}"
+          else
+            last=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2>/dev/null || true)
+            version=$(python3 scripts/next-version.py "$last")
+          fi
+          if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version: $version"
+            exit 1
+          fi
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release v$version already exists"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "upstream=$(cat scripts/upstream-version.txt)" >> "$GITHUB_OUTPUT"
+          echo "Releasing Threadrinth $version"
+
+  build:
+    name: Build (${{ matrix.name }})
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            bundles: --bundles nsis
+          - name: Linux
+            os: ubuntu-22.04
+            bundles: ''
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Set version and environment
+        shell: bash
+        run: |
+          sed -i.bak -E "0,/^version = .*/s//version = \"$VERSION\"/" apps/app/Cargo.toml packages/app-lib/Cargo.toml
+          rm -f apps/app/Cargo.toml.bak packages/app-lib/Cargo.toml.bak
+          node -e "const f='apps/app-frontend/package.json';const p=require('./'+f);p.version=process.env.VERSION;require('fs').writeFileSync(f,JSON.stringify(p,null,'\t')+'\n')"
+          cp packages/app-lib/.env.prod packages/app-lib/.env
+          grep -m1 '^version' apps/app/Cargo.toml packages/app-lib/Cargo.toml
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build and upload
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SQLX_OFFLINE: 'true'
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: apps/app
+          tauriScript: pnpm tauri
+          args: --config tauri-release.conf.json ${{ matrix.bundles }}
+          tagName: v${{ env.VERSION }}
+          releaseName: Threadrinth v${{ env.VERSION }}
+          releaseCommitish: ${{ github.sha }}
+          releaseBody: |
+            Threadrinth ${{ env.VERSION }}, based on Modrinth App ${{ needs.version.outputs.upstream }}.
+
+            **Windows:** download the `-setup.exe`.
+            **Linux:** download the `.AppImage` (updates itself), or the `.deb` / `.rpm` for your package manager.
+
+            Installed copies update themselves from this page. The builds aren't code-signed yet, so Windows may show a SmartScreen warning ("More info" → "Run anyway").
+          releaseDraft: true
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
+
+  publish:
+    name: Publish release
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "v${{ needs.version.outputs.version }}" --repo "$GITHUB_REPOSITORY" --draft=false --latest

@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in Threadrinth doesn't work.
+type: 'bug'
+body:
+  - type: checkboxes
+    attributes:
+      label: Please confirm the following.
+      options:
+        - label: I checked the [existing issues](https://github.com/Georgwav/Threadrinth/issues?q=is%3Aissue) for duplicates
+          required: true
+        - label: I'm on the latest Threadrinth version
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Threadrinth version
+      description: Found in Settings, bottom left.
+    validations:
+      required: true
+  - type: dropdown
+    id: oses
+    attributes:
+      label: Operating system
+      multiple: true
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: What went wrong, and what you expected instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+  - type: textarea
+    attributes:
+      label: Logs
+      description: Relevant launcher logs, if any.
+      render: text

@@ -1,3 +1,22 @@
 {
-	"bundle": {}
+	"bundle": {
+		"createUpdaterArtifacts": true
+	},
+	"build": {
+		"features": ["updater"]
+	},
+	"app": {
+		"security": {
+			"capabilities": ["ads", "core", "plugins", "updater"]
+		}
+	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg0REZEMDRFRTE4M0VFM0YKUldRLzdvUGhUdERmaEVBSHlRSG1JNzlabkhtb1liVDB5dWR1Q1VYbytNeEVORU5wWkpWVUxyVHQK",
+			"endpoints": ["https://github.com/Georgwav/Threadrinth/releases/latest/download/latest.json"],
+			"windows": {
+				"installMode": "quiet"
+			}
+		}
+	}
 }
