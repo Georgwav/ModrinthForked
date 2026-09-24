@@ -288,6 +288,89 @@ uninlined_format_args = "warn"
 unnested_or_patterns = "warn"
 wildcard_dependencies = "warn"
 
+# Threadrinth: workspace dependencies only the removed Modrinth apps use (see
+# scripts/upstream-removed.txt). They stay listed so upstream version bumps
+# merge cleanly, and cargo-shear is told to ignore them.
+[workspace.metadata.cargo-shear]
+ignored = [
+  "actix-cors",
+  "actix-files",
+  "actix-http",
+  "actix-multipart",
+  "actix-rt",
+  "actix-web",
+  "actix-web-prom",
+  "actix-ws",
+  "arc-swap",
+  "argon2",
+  "async-stripe",
+  "aws-sdk-s3",
+  "bitflags",
+  "blocklist",
+  "cel",
+  "censor",
+  "chumsky",
+  "clap",
+  "clickhouse",
+  "color-eyre",
+  "color-thief",
+  "const_format",
+  "deadpool-redis",
+  "dioxus-devtools",
+  "directories",
+  "dotenv-build",
+  "futures-util",
+  "hex",
+  "hmac",
+  "hyper-rustls",
+  "iana-time-zone",
+  "indexmap",
+  "jemalloc_pprof",
+  "json-patch",
+  "lettre",
+  "lingua",
+  "linkify",
+  "lz4_flex",
+  "maxminddb",
+  "md5",
+  "murmur2",
+  "prometheus",
+  "psl",
+  "pulldown-cmark",
+  "rand_chacha",
+  "rdkafka",
+  "redis",
+  "rust-s3",
+  "rust_decimal",
+  "rust_iso3166",
+  "rustls",
+  "rustrict",
+  "rusty-money",
+  "scalar_api_reference",
+  "secrecy",
+  "sentry",
+  "sha1",
+  "smallvec",
+  "spdx",
+  "strum",
+  "tar",
+  "tikv-jemalloc-ctl",
+  "tikv-jemallocator",
+  "tokio-stream",
+  "totp-rs",
+  "tracing-actix-web",
+  "tracing-ecs",
+  "unicode-normalization",
+  "unicode-segmentation",
+  "validator",
+  "webauthn-rs",
+  "webauthn-rs-proto",
+  "webp",
+  "woothee",
+  "yaserde",
+  "zxcvbn",
+]
+
 # Pin the upstream Tao 0.36 upgrade until a Tauri release includes the Windows input deadlock fix.
 # https://github.com/tauri-apps/tauri/pull/15307
 [patch.crates-io]
@@ -312,4 +395,3 @@ panic = "abort"  # Strip expensive panic clean-up logic
 [profile.test]
 inherits = "dev"
 debug = "line-tables-only"
-
