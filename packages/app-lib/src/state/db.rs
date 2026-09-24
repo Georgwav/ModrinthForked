@@ -16,9 +16,14 @@ pub(crate) async fn connect(
 
     crate::util::io::create_dir_all(&settings_dir).await?;
 
-    let db_path = settings_dir.join("app.db");
+    let db_path = crate::state::shared_app_db::app_db_path(&settings_dir).await;
 
     connect_app_db(&db_path).await
+}
+
+/// Opens the database at `db_path` (used when switching to a shared one).
+pub(crate) async fn connect_at(db_path: &Path) -> crate::Result<Pool<Sqlite>> {
+    connect_app_db(db_path).await
 }
 
 async fn connect_app_db(db_path: &Path) -> crate::Result<Pool<Sqlite>> {
