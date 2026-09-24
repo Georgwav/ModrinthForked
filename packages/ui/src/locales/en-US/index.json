@@ -5888,6 +5888,9 @@
   "settings.display.theme.amethyst": {
     "defaultMessage": "Amethyst"
   },
+  "settings.display.theme.blossom": {
+    "defaultMessage": "Blossom"
+  },
   "settings.display.theme.dark": {
     "defaultMessage": "Dark"
   },

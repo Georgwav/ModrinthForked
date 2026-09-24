@@ -54,6 +54,10 @@ const themeLabels = defineMessages({
 		id: 'settings.display.theme.amethyst',
 		defaultMessage: 'Amethyst',
 	},
+	blossom: {
+		id: 'settings.display.theme.blossom',
+		defaultMessage: 'Blossom',
+	},
 })
 
 const themeTooltips = defineMessages({

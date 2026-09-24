@@ -450,6 +450,7 @@ pub enum Theme {
     Sand,
     Orchid,
     Amethyst,
+    Blossom,
 }
 
 impl Theme {
@@ -464,6 +465,7 @@ impl Theme {
             Theme::Sand => "sand",
             Theme::Orchid => "orchid",
             Theme::Amethyst => "amethyst",
+            Theme::Blossom => "blossom",
         }
     }
 
@@ -478,6 +480,7 @@ impl Theme {
             "sand" => Theme::Sand,
             "orchid" => Theme::Orchid,
             "amethyst" => Theme::Amethyst,
+            "blossom" => Theme::Blossom,
             _ => Theme::Dark,
         }
     }

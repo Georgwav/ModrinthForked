@@ -77,3 +77,22 @@
 	--color-gradient-button-bg: linear-gradient(180deg, #fffaf2 0%, #eadfcc 100%);
 	--splash-tint-bottom: rgba(236, 214, 180, 0.563);
 }
+
+// Minecraft's cherry blossom: pink leaf surfaces and dark cherry-log text.
+.blossom-mode {
+	@extend .light-mode;
+	--surface-1: #eab0cb;
+	--surface-1-5: #edb8d1;
+	--surface-2: #f0c0d7;
+	--surface-2-5: #f3c8dc;
+	--surface-3: #f6d0e2;
+	--surface-4: #f9dcea;
+	--surface-5: #d680aa;
+
+	--color-text-primary: #3a1729;
+	--color-text-default: #5f2c47;
+	--color-text-tertiary: #814464;
+	--color-button-border: rgba(120, 30, 70, 0.3);
+	--color-gradient-button-bg: linear-gradient(180deg, #f9dcea 0%, #efc0d6 100%);
+	--splash-tint-bottom: rgba(234, 150, 190, 0.563);
+}

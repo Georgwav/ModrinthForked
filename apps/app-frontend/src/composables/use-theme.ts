@@ -9,6 +9,7 @@ export const THEME_OPTIONS = [
 	'sand',
 	'orchid',
 	'amethyst',
+	'blossom',
 	'retro',
 	'system',
 ] as const
@@ -32,6 +33,7 @@ const THEME_BASES = {
 	sand: 'light',
 	orchid: 'dark',
 	amethyst: 'dark',
+	blossom: 'light',
 } as const
 
 type ThreadrinthTheme = keyof typeof THEME_BASES
