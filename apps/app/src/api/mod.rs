@@ -31,6 +31,7 @@ pub mod files;
 pub mod friends;
 pub mod worlds;
 
+pub mod hosting;
 pub mod threadrinth;
 
 mod oauth_utils;
