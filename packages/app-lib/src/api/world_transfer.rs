@@ -100,6 +100,28 @@ fn free_folder_name(dir: &Path, name: &str) -> String {
         .expect("an unused name exists")
 }
 
+/// Copies a world folder into `target` (which must not exist yet), leaving
+/// out Minecraft's `session.lock`; removes the partial copy on failure.
+pub(crate) async fn copy_world(
+    source: &Path,
+    target: &Path,
+) -> crate::Result<()> {
+    if !source.join("level.dat").is_file() {
+        return Err(crate::ErrorKind::InputError(format!(
+            "{} is not a world folder",
+            source.display()
+        ))
+        .into());
+    }
+    let lock = super::worlds::get_world_session_lock(source).await?;
+    let result = copy_world_dir(source, target).await;
+    drop(lock);
+    if result.is_err() {
+        let _ = io::remove_dir_all(target).await;
+    }
+    result
+}
+
 /// Copies a world folder, leaving out Minecraft's `session.lock`.
 async fn copy_world_dir(source: &Path, target: &Path) -> crate::Result<()> {
     let mut pending = vec![(source.to_path_buf(), target.to_path_buf())];

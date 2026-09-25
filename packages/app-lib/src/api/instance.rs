@@ -7,6 +7,7 @@ pub use self::server_pack::{
     ServerPackReport, ServerPackSelection, export_server_pack,
     server_pack_selection,
 };
+pub(crate) use self::server_pack::{collect_server_files, write_dir};
 mod files;
 pub use files::{
     InstanceFileItem, create_instance_directory, delete_instance_file,

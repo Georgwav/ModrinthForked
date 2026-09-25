@@ -305,6 +305,13 @@ fn main() {
                     );
                 }
 
+                // Servers hosted from the app save and stop with it.
+                if matches!(&event, tauri::RunEvent::Exit) {
+                    tauri::async_runtime::block_on(
+                        theseus::hosting::stop_all_servers(),
+                    );
+                }
+
                 #[cfg(feature = "updater")]
                 if matches!(&event, tauri::RunEvent::Exit) {
                     let update_data = app.state::<PendingUpdateData>().inner();

@@ -34,7 +34,7 @@ const SERVER_FOLDERS: &[&str] = &[
 /// The paths selected when the export screen opens, as include and exclude
 /// rules like the modpack export uses: `mods` and the server folders, minus
 /// the mods Modrinth lists as client-only and disabled mods.
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ServerPackSelection {
     pub included: Vec<String>,
     pub excluded: Vec<String>,
@@ -46,7 +46,7 @@ pub struct ServerPackReport {
     pub mods_included: usize,
 }
 
-enum Entry {
+pub(crate) enum Entry {
     Content(ReadableContent),
     Bytes(Vec<u8>, bool),
 }
@@ -140,8 +140,6 @@ pub async fn export_server_pack(
     excluded: Vec<String>,
 ) -> crate::Result<ServerPackReport> {
     let state = State::get().await?;
-    let metadata = with_loader_version(instance_id).await?;
-    let instance_dir = get_full_path(instance_id).await?;
     if let Some(parent) = export_path.parent() {
         let parent = tokio::fs::canonicalize(parent).await?;
         if parent.starts_with(
@@ -154,6 +152,34 @@ pub async fn export_server_pack(
         }
     }
 
+    let files = collect_server_files(instance_id, included, excluded).await?;
+    let entries = files.entries;
+    tokio::task::spawn_blocking(move || write_zip(&export_path, entries))
+        .await??;
+    Ok(files.report)
+}
+
+/// Everything a server pack contains, ready to be written as a zip or into a
+/// server folder.
+pub(crate) struct ServerFiles {
+    /// The instance, with its mod loader version filled in.
+    pub metadata: InstanceMetadata,
+    pub report: ServerPackReport,
+    pub entries: Vec<(String, Entry)>,
+    /// The launcher (or installer) jar among the entries.
+    pub launcher_file: String,
+}
+
+/// Collects the selected files of an instance plus the mod loader's server
+/// launcher, start scripts and README.
+pub(crate) async fn collect_server_files(
+    instance_id: &str,
+    included: Vec<String>,
+    excluded: Vec<String>,
+) -> crate::Result<ServerFiles> {
+    let state = State::get().await?;
+    let metadata = with_loader_version(instance_id).await?;
+    let instance_dir = get_full_path(instance_id).await?;
     let selection = ExportSelection::new(included, excluded);
     let stored_files =
         content_rows::get_instance_files(instance_id, &state.pool)
@@ -222,6 +248,7 @@ pub async fn export_server_pack(
         content_set.loader_version.as_deref(),
     )
     .await?;
+    let launcher_file = launcher.file_name.clone();
     entries.push((
         launcher.file_name.clone(),
         Entry::Bytes(launcher.jar, false),
@@ -243,9 +270,48 @@ pub async fn export_server_pack(
         ),
     ));
 
-    tokio::task::spawn_blocking(move || write_zip(&export_path, entries))
-        .await??;
-    Ok(report)
+    Ok(ServerFiles {
+        metadata,
+        report,
+        entries,
+        launcher_file,
+    })
+}
+
+/// Writes server pack entries into a folder, replacing files that exist.
+pub(crate) fn write_dir(
+    dir: &Path,
+    entries: Vec<(String, Entry)>,
+) -> crate::Result<()> {
+    for (name, entry) in entries {
+        let target = dir.join(&name);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|error| IOError::with_path(error, parent))?;
+        }
+        match entry {
+            Entry::Content(content) => {
+                std::fs::copy(content.path(), &target)
+                    .map_err(|error| IOError::with_path(error, &target))?;
+            }
+            Entry::Bytes(bytes, executable) => {
+                std::fs::write(&target, bytes)
+                    .map_err(|error| IOError::with_path(error, &target))?;
+                #[cfg(unix)]
+                if executable {
+                    use std::os::unix::fs::PermissionsExt;
+                    std::fs::set_permissions(
+                        &target,
+                        std::fs::Permissions::from_mode(0o755),
+                    )
+                    .map_err(|error| IOError::with_path(error, &target))?;
+                }
+                #[cfg(not(unix))]
+                let _ = executable;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn write_zip(path: &Path, entries: Vec<(String, Entry)>) -> crate::Result<()> {

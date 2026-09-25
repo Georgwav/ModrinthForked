@@ -2,6 +2,7 @@
 pub mod cache;
 pub mod friends;
 pub mod handler;
+pub mod hosting;
 pub mod instance;
 pub mod jre;
 pub mod logs;
