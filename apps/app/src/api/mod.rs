@@ -27,6 +27,7 @@ mod ads_occlusion_macos;
 #[cfg(windows)]
 mod ads_occlusion_windows;
 pub mod cache;
+pub mod curseforge;
 pub mod files;
 pub mod friends;
 pub mod worlds;
