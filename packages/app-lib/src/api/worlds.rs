@@ -300,12 +300,22 @@ async fn get_all_worlds_in_instance(
     get_singleplayer_worlds_in_instance(instance_dir, &mut worlds).await?;
     let state = State::get().await?;
 
-    get_server_worlds_in_instance(instance_id, instance_dir, &mut worlds)
-        .await?;
+    // Servers and attached data are extras: failing to read them must not
+    // hide the singleplayer worlds.
+    if let Err(error) =
+        get_server_worlds_in_instance(instance_id, instance_dir, &mut worlds)
+            .await
+    {
+        tracing::warn!("Failed to read the servers of {instance_id}: {error}");
+    }
 
     let attached_data =
         AttachedWorldData::get_all_for_instance(instance_id, &state.pool)
-            .await?;
+            .await
+            .unwrap_or_else(|error| {
+                tracing::warn!("Failed to read attached world data: {error}");
+                Default::default()
+            });
     if !attached_data.is_empty() {
         for world in &mut worlds {
             if let Some(data) = attached_data
@@ -381,10 +391,21 @@ pub async fn get_singleplayer_world(
 	fields(world = %world_path.file_name().unwrap_or_default().to_string_lossy())
 )]
 async fn read_singleplayer_world(world_path: PathBuf) -> Result<World> {
-    if let Some(_lock) = try_get_world_session_lock(&world_path).await? {
-        read_singleplayer_world_maybe_locked(world_path, false).await
-    } else {
-        read_singleplayer_world_maybe_locked(world_path, true).await
+    match try_get_world_session_lock(&world_path).await {
+        Ok(Some(_lock)) => {
+            read_singleplayer_world_maybe_locked(world_path, false).await
+        }
+        Ok(None) => {
+            read_singleplayer_world_maybe_locked(world_path, true).await
+        }
+        // A drive that can't take the lock (read-only, or a file system
+        // without locking) still lists the world.
+        Err(error) => {
+            tracing::debug!(
+                "Could not check the world's session.lock: {error}"
+            );
+            read_singleplayer_world_maybe_locked(world_path, false).await
+        }
     }
 }
 

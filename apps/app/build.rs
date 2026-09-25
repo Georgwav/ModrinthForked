@@ -469,7 +469,11 @@ fn main() {
             .plugin(
                 "threadrinth",
                 InlinedPlugin::new()
-                    .commands(&["transfer_world", "export_server_pack"])
+                    .commands(&[
+                        "transfer_world",
+                        "server_pack_selection",
+                        "export_server_pack",
+                    ])
                     .default_permission(
                         DefaultPermissionRule::AllowAllCommands,
                     ),
