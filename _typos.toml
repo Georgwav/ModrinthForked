@@ -22,6 +22,8 @@ extend-ignore-re = [
 ]
 
 [default.extend-words]
+# Universal Plug and Play (router port forwarding), as in "UPnP"
+Pn = "Pn"
 # Terms Of Use in `tou-link`
 tou = "tou"
 # Google Ad Manager
