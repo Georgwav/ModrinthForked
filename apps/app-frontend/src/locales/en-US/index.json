@@ -953,6 +953,9 @@
   "app.instance.worlds.transfer.move-description": {
     "message": "Removes the world from this instance after copying it."
   },
+  "app.instance.worlds.transfer.move-title": {
+    "message": "Move to instance"
+  },
   "app.instance.worlds.transfer.moved": {
     "message": "World moved"
   },
@@ -1682,17 +1685,26 @@
   "app.screenshots.sort.oldest": {
     "message": "Oldest"
   },
+  "app.server-pack.description": {
+    "message": "Pick what the server gets. Mods Modrinth lists as client-only start unchecked; the mod loader and start scripts are added for you."
+  },
+  "app.server-pack.export-button": {
+    "message": "Export"
+  },
   "app.server-pack.exported": {
     "message": "Server pack exported"
   },
   "app.server-pack.exported-description": {
-    "message": "{count, plural, one {# mod} other {# mods}} included{clientOnly, plural, =0 {} one {, # client-only mod left out} other {, # client-only mods left out}}. Run start.sh or start.bat to start the server; README.txt explains the rest."
+    "message": "{count, plural, one {# mod} other {# mods}} included. Run start.sh or start.bat to start the server; README.txt explains the rest."
   },
   "app.server-pack.exporting": {
     "message": "Exporting server pack"
   },
   "app.server-pack.exporting-description": {
-    "message": "Collecting the mods and downloading the server launcher for {name}."
+    "message": "Collecting the files and downloading the server launcher for {name}."
+  },
+  "app.server-pack.header": {
+    "message": "Export server pack"
   },
   "app.server-pack.zip-files": {
     "message": "Zip archive"
@@ -4540,6 +4552,9 @@
   },
   "instance.worlds.more-options": {
     "message": "More options"
+  },
+  "instance.worlds.move-to-instance": {
+    "message": "Move to instance…"
   },
   "instance.worlds.no_contact": {
     "message": "Server couldn't be contacted"
