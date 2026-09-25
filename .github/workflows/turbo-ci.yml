@@ -75,6 +75,16 @@ jobs:
         if: env.INTERNAL == 'true'
         uses: namespace-actions/setup-turbocache@f96bd6befa13ae74b2858a5be49573640d4636f5 # v0.0.2
 
+      # Threadrinth: Turborepo's local cache, so packages whose files didn't
+      # change skip their lint and tests.
+      - name: Cache Turborepo
+        if: env.INTERNAL != 'true'
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
       - name: Install apt dependencies
         run: |
           sudo apt-get update
@@ -85,7 +95,9 @@ jobs:
         with:
           rustflags: ''
           components: clippy, rustfmt
-          cache: false
+          # Threadrinth: GitHub's runners start empty, so keep the compiled
+          # dependencies between runs (pull requests reuse main's cache).
+          cache: ${{ env.INTERNAL != 'true' }}
 
       - name: Setup mold
         uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444 # v1 / Mold 2.41.0

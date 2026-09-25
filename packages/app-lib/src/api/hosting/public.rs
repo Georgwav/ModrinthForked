@@ -13,10 +13,8 @@ use playit_agent_core::network::udp::udp_settings::UdpSettings;
 use playit_agent_core::playit_agent::{PlayitAgent, PlayitAgentSettings};
 use playit_api_client::PlayitApi;
 use playit_api_client::api::{
-    AccountTunnelOriginCreate, AgentOrigin, AgentTunnelAttr, AgentTunnelConfig,
     AgentTunnelV1, ClaimAgentType, ClaimSetupResponse, ReqClaimExchange,
-    ReqClaimSetup, ReqTunnelsCreateV1, ReqTunnelsDelete, TunnelPortDetails,
-    TunnelType,
+    ReqClaimSetup, ReqTunnelsDelete,
 };
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
@@ -411,39 +409,18 @@ async fn playit_open(
             .await;
     }
     if existing.is_none_or(|tunnel| tunnel_local_port(tunnel) != Some(port)) {
-        let request = ReqTunnelsCreateV1 {
-            name: Some(name.clone()),
-            ports: TunnelPortDetails::TunnelType(TunnelType::MinecraftJava),
-            origin: AccountTunnelOriginCreate::Agent(AgentOrigin {
-                agent_id: Some(run_data.agent_id),
-                config: AgentTunnelConfig {
-                    fields: vec![
-                        AgentTunnelAttr {
-                            name: "local_ip".to_string(),
-                            value: Ipv4Addr::LOCALHOST.to_string(),
-                        },
-                        AgentTunnelAttr {
-                            name: "local_port".to_string(),
-                            value: port.to_string(),
-                        },
-                    ],
-                },
-            }),
-            enabled: true,
-            alloc: None,
-            firewall_id: None,
-        };
+        let body = tunnel_create_body(&name, run_data.agent_id, port);
         // The agent's first connection can take a moment to register.
         let mut attempts = 0;
         loop {
-            match api.v1_tunnels_create(request.clone()).await {
-                Ok(_) => break,
+            match create_tunnel(secret, &body).await {
+                Ok(()) => break,
                 Err(error) if attempts < 5 => {
-                    tracing::debug!("Creating the playit.gg tunnel: {error:?}");
+                    tracing::debug!("Creating the playit.gg tunnel: {error}");
                     attempts += 1;
                     tokio::time::sleep(Duration::from_secs(2)).await;
                 }
-                Err(error) => return Err(format!("{error:?}")),
+                Err(error) => return Err(error),
             }
         }
     }
@@ -466,6 +443,71 @@ async fn playit_open(
         tokio::time::sleep(Duration::from_secs(1)).await;
     }
     Err("the tunnel didn't get an address".to_string())
+}
+
+/// The body playit.gg's website sends to `/v1/tunnels/create`: a Minecraft
+/// Java tunnel on the free network to this agent's `localhost:port`. The
+/// published API client still has an older shape the API rejects.
+fn tunnel_create_body(
+    name: &str,
+    agent_id: uuid::Uuid,
+    port: u16,
+) -> serde_json::Value {
+    serde_json::json!({
+        "name": name,
+        "protocol": { "type": "tunnel-type", "details": "minecraft-java" },
+        "origin": {
+            "type": "agent",
+            "data": {
+                "agent_id": agent_id,
+                "config": {
+                    "fields": [
+                        { "name": "local_ip", "value": Ipv4Addr::LOCALHOST.to_string() },
+                        { "name": "local_port", "value": port.to_string() },
+                    ],
+                },
+            },
+        },
+        "endpoint": {
+            "type": "region",
+            "details": { "region": "global", "port": null },
+        },
+        "enabled": true,
+    })
+}
+
+async fn create_tunnel(
+    secret: &str,
+    body: &serde_json::Value,
+) -> Result<(), String> {
+    let response: serde_json::Value = crate::util::fetch::REQWEST_CLIENT
+        .post(format!("{PLAYIT_API}/v1/tunnels/create"))
+        .header("Authorization", format!("Agent-Key {}", secret.trim()))
+        .json(body)
+        .timeout(Duration::from_secs(20))
+        .send()
+        .await
+        .map_err(|error| error.to_string())?
+        .json()
+        .await
+        .map_err(|error| error.to_string())?;
+    if response["status"] == "success" {
+        Ok(())
+    } else {
+        Err(playit_error_text(&response["data"]))
+    }
+}
+
+/// A readable message from a playit.gg `fail`/`error` answer.
+fn playit_error_text(data: &serde_json::Value) -> String {
+    match data {
+        serde_json::Value::String(text) => text.clone(),
+        serde_json::Value::Object(error) => error
+            .get("message")
+            .and_then(|x| x.as_str())
+            .map_or_else(|| data.to_string(), str::to_string),
+        other => other.to_string(),
+    }
 }
 
 fn tunnel_local_port(tunnel: &AgentTunnelV1) -> Option<u16> {
@@ -539,6 +581,29 @@ mod tests {
             "carrier-grade NAT"
         );
         assert!(is_public("100.128.0.1".parse().unwrap()));
+    }
+
+    #[test]
+    fn tunnel_body_matches_the_website() {
+        let body =
+            tunnel_create_body("threadrinth-a", uuid::Uuid::nil(), 25570);
+        assert_eq!(body["protocol"]["details"], "minecraft-java");
+        assert_eq!(body["origin"]["type"], "agent");
+        assert_eq!(
+            body["origin"]["data"]["config"]["fields"][1]["value"],
+            "25570"
+        );
+        assert_eq!(body["endpoint"]["details"]["region"], "global");
+        assert_eq!(
+            playit_error_text(
+                &serde_json::json!({"type":"validation","message":"failed to parse body"})
+            ),
+            "failed to parse body"
+        );
+        assert_eq!(
+            playit_error_text(&serde_json::json!("AgentNotFound")),
+            "AgentNotFound"
+        );
     }
 
     #[test]

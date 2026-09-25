@@ -104,8 +104,18 @@ const messages = defineMessages({
 	},
 })
 
-const tabType = computed(() => String(route.params.projectType ?? 'mod'))
-const projectId = computed(() => Number(route.params.id))
+// Follow the route only while it is this page: leaving it (for example to
+// the downloads) must not load a project with no id.
+const tabType = ref(String(route.params.projectType ?? 'mod'))
+const projectId = ref(Number(route.params.id))
+watch(
+	() => [route.name, route.params.projectType, route.params.id],
+	() => {
+		if (route.name !== 'CurseForgeProject') return
+		tabType.value = String(route.params.projectType ?? 'mod')
+		projectId.value = Number(route.params.id)
+	},
+)
 const isFtb = computed(() => tabType.value === 'ftb')
 
 const cfProject = ref<CurseForgeProject | null>(null)
@@ -202,7 +212,13 @@ async function load() {
 		loading.value = false
 	}
 }
-watch([tabType, projectId], () => void load(), { immediate: true })
+watch(
+	[tabType, projectId],
+	() => {
+		if (Number.isFinite(projectId.value)) void load()
+	},
+	{ immediate: true },
+)
 
 async function startPackInstall(name: string, start: () => Promise<PackInstallReport>) {
 	installing.value = true

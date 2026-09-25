@@ -55,7 +55,7 @@ pub struct ServerStatus {
     pub state: ServerState,
     pub started: Option<DateTime<Utc>>,
     pub players: Vec<String>,
-    /// Percent of one CPU core, like task managers show per process.
+    /// Percent of the whole CPU (all cores), like task managers show.
     pub cpu_percent: Option<f32>,
     pub memory_bytes: Option<u64>,
     /// How the last run ended, when it's not running.
@@ -446,7 +446,10 @@ pub fn server_status(id: &str) -> ServerStatus {
                 ProcessRefreshKind::nothing().with_cpu().with_memory(),
             );
             system.process(pid).map_or((None, None), |process| {
-                (Some(process.cpu_usage()), Some(process.memory()))
+                (
+                    Some(whole_cpu_percent(process.cpu_usage())),
+                    Some(process.memory()),
+                )
             })
         }
         _ => (None, None),
@@ -513,6 +516,13 @@ async fn check_reachability(session: &Arc<Mutex<Session>>) {
 /// Checks again whether players outside this network can join.
 pub async fn check_server_reachability(id: &str) {
     check_reachability(&session(id)).await;
+}
+
+/// sysinfo counts each core as 100%; the page shows the whole CPU.
+fn whole_cpu_percent(per_core: f32) -> f32 {
+    let cores = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZeroUsize::get) as f32;
+    (per_core / cores).clamp(0.0, 100.0)
 }
 
 fn lock(session: &Mutex<Session>) -> std::sync::MutexGuard<'_, Session> {
