@@ -53,6 +53,8 @@ export interface BrowseManagerContext {
 	getServerProjectLink: (
 		result: Labrinth.Search.v3.ResultSearchProject,
 	) => string | RouteLocationRaw
+	/** Threadrinth: author links for results from other sites (CurseForge). */
+	getAuthorLink?: (result: Labrinth.Search.v3.ResultSearchProject) => string | undefined
 
 	selectableProjectTypes: ComputedRef<{ label: string; href: string; shown?: boolean }[]>
 	showProjectTypeTabs: ComputedRef<boolean>

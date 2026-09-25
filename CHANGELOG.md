@@ -2,6 +2,17 @@
 
 Each release's GitHub description is taken from its section here (see `scripts/release-notes.py`).
 
+## 0.21.8
+
+- The CurseForge tab looks and works like Discover, with tabs for Modpacks, FTB Modpacks, Mods, Resource Packs, Data Packs and Shaders, filters, sorting and pages.
+- Click a CurseForge or Feed the Beast project to see its page, with the description and all versions.
+- Install CurseForge resource packs, data packs and shaders into an instance.
+- Feed the Beast modpacks load again (they use FTB's current address now).
+- Fixed linking playit.gg ("AgentVersionTooOld").
+- A server's page shows its addresses with copy buttons, and whether port forwarding works from the internet.
+- Running servers show in the top bar, like running instances; click to go back to them.
+- Instance and world icons in the Host dialog, and the instance's icon on its server.
+
 ## 0.21.7
 
 - Host any instance as a server: click Host as server in its menu. The Minecraft version, mod loader and server-side mods are set up for you (client-only mods are left out), with a new or copied world.

@@ -13,9 +13,10 @@ use playit_agent_core::network::udp::udp_settings::UdpSettings;
 use playit_agent_core::playit_agent::{PlayitAgent, PlayitAgentSettings};
 use playit_api_client::PlayitApi;
 use playit_api_client::api::{
-    AgentType, AssignedAgentCreate, ClaimSetupResponse, PortType,
-    ReqClaimExchange, ReqClaimSetup, ReqTunnelsCreate, ReqTunnelsDelete,
-    TunnelOriginCreate, TunnelType,
+    AccountTunnelOriginCreate, AgentOrigin, AgentTunnelAttr, AgentTunnelConfig,
+    AgentTunnelV1, ClaimAgentType, ClaimSetupResponse, ReqClaimExchange,
+    ReqClaimSetup, ReqTunnelsCreateV1, ReqTunnelsDelete, TunnelPortDetails,
+    TunnelType,
 };
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
@@ -27,6 +28,9 @@ use tokio::sync::Mutex;
 
 const PLAYIT_API: &str = "https://api.playit.gg";
 const PLAYIT_FILE: &str = ".playit.json";
+/// The playit.gg agent this app runs (the `playit-agent-core` tag in
+/// Cargo.toml), reported like the official agent does.
+const PLAYIT_AGENT_VERSION: &str = "playit 1.0.10";
 /// How long a link code waits for the confirmation in the browser.
 const LINK_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 
@@ -102,6 +106,50 @@ pub(super) async fn close(address: &PublicAddress, port: u16) {
     if address.via == PublicVia::Upnp {
         let _ = upnp_close(port).await;
     }
+}
+
+/// Whether players outside this network can join a server.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum Reachability {
+    Unchecked,
+    Checking,
+    Reachable,
+    Unreachable,
+}
+
+#[derive(Deserialize)]
+struct McStatus {
+    online: bool,
+}
+
+/// Asks mcstatus.io to ping the server from outside this network, which
+/// shows whether port forwarding really works (routers often can't reach
+/// their own public address from the inside).
+pub(super) async fn check_reachable(address: &str) -> Result<bool, String> {
+    let url = format!(
+        "https://api.mcstatus.io/v2/status/java/{}?query=false",
+        urlencoding::encode(address)
+    );
+    let status: McStatus = crate::util::fetch::REQWEST_CLIENT
+        .get(url)
+        .timeout(Duration::from_secs(20))
+        .send()
+        .await
+        .and_then(|response| response.error_for_status())
+        .map_err(|error| error.to_string())?
+        .json()
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(status.online)
+}
+
+/// This computer's address in the local network, for players on the same
+/// Wi-Fi.
+pub(super) fn lan_address(port: u16) -> Option<String> {
+    let ip = local_ip_towards(SocketAddr::from(([1, 1, 1, 1], 80)))?;
+    (!ip.is_loopback() && !ip.is_unspecified())
+        .then(|| address_with_port(&ip.to_string(), port))
 }
 
 // --- UPnP ---------------------------------------------------------------
@@ -269,8 +317,8 @@ async fn finish_link(code: &str) -> Result<(), String> {
         let setup = api
             .claim_setup(ReqClaimSetup {
                 code: code.to_string(),
-                agent_type: AgentType::SelfManaged,
-                version: format!("Threadrinth {}", env!("CARGO_PKG_VERSION")),
+                agent_type: ClaimAgentType::SelfManaged,
+                version: PLAYIT_AGENT_VERSION.to_string(),
             })
             .await
             .map_err(|error| format!("{error:?}"))?;
@@ -333,27 +381,27 @@ pub async fn unlink_playit() -> crate::Result<()> {
     Ok(())
 }
 
-/// Makes sure a tunnel to `port` exists and the agent runs, and returns the
-/// tunnel's address.
+/// Makes sure the agent runs and a tunnel to `port` exists, and returns
+/// the tunnel's address.
 async fn playit_open(
     secret: &str,
     server_id: &str,
     port: u16,
 ) -> Result<String, String> {
+    // playit.gg only makes tunnels for agents it has seen, with a current
+    // version, so the agent connects first.
+    ensure_agent(secret).await?;
     let api =
         PlayitApi::create(PLAYIT_API.to_string(), Some(secret.to_string()));
     let name = format!("threadrinth-{server_id}");
     let run_data = api
-        .agents_rundata()
+        .v1_agents_rundata()
         .await
         .map_err(|error| format!("{error:?}"))?;
 
-    let existing = run_data
-        .tunnels
-        .iter()
-        .find(|tunnel| tunnel.name.as_deref() == Some(name.as_str()));
+    let existing = run_data.tunnels.iter().find(|tunnel| tunnel.name == name);
     if let Some(tunnel) = existing
-        && tunnel.local_port != port
+        && tunnel_local_port(tunnel) != Some(port)
     {
         // The server's port changed.
         let _ = api
@@ -362,48 +410,71 @@ async fn playit_open(
             })
             .await;
     }
-    if existing.is_none_or(|tunnel| tunnel.local_port != port) {
-        api.tunnels_create(ReqTunnelsCreate {
+    if existing.is_none_or(|tunnel| tunnel_local_port(tunnel) != Some(port)) {
+        let request = ReqTunnelsCreateV1 {
             name: Some(name.clone()),
-            tunnel_type: Some(TunnelType::MinecraftJava),
-            port_type: PortType::Tcp,
-            port_count: 1,
-            origin: TunnelOriginCreate::Agent(AssignedAgentCreate {
-                agent_id: run_data.agent_id,
-                local_ip: IpAddr::V4(Ipv4Addr::LOCALHOST),
-                local_port: Some(port),
+            ports: TunnelPortDetails::TunnelType(TunnelType::MinecraftJava),
+            origin: AccountTunnelOriginCreate::Agent(AgentOrigin {
+                agent_id: Some(run_data.agent_id),
+                config: AgentTunnelConfig {
+                    fields: vec![
+                        AgentTunnelAttr {
+                            name: "local_ip".to_string(),
+                            value: Ipv4Addr::LOCALHOST.to_string(),
+                        },
+                        AgentTunnelAttr {
+                            name: "local_port".to_string(),
+                            value: port.to_string(),
+                        },
+                    ],
+                },
             }),
             enabled: true,
             alloc: None,
             firewall_id: None,
-            proxy_protocol: None,
-        })
-        .await
-        .map_err(|error| format!("{error:?}"))?;
+        };
+        // The agent's first connection can take a moment to register.
+        let mut attempts = 0;
+        loop {
+            match api.v1_tunnels_create(request.clone()).await {
+                Ok(_) => break,
+                Err(error) if attempts < 5 => {
+                    tracing::debug!("Creating the playit.gg tunnel: {error:?}");
+                    attempts += 1;
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                }
+                Err(error) => return Err(format!("{error:?}")),
+            }
+        }
     }
-
-    ensure_agent(secret).await?;
 
     // A new tunnel takes a moment to get its address.
     for _ in 0..30 {
         let run_data = api
-            .agents_rundata()
+            .v1_agents_rundata()
             .await
             .map_err(|error| format!("{error:?}"))?;
-        if let Some(tunnel) = run_data
-            .tunnels
-            .iter()
-            .find(|tunnel| tunnel.name.as_deref() == Some(name.as_str()))
+        if let Some(tunnel) =
+            run_data.tunnels.iter().find(|tunnel| tunnel.name == name)
+            && !tunnel.display_address.is_empty()
         {
-            let host = tunnel
-                .custom_domain
-                .clone()
-                .unwrap_or_else(|| tunnel.assigned_domain.clone());
-            return Ok(host);
+            if let Some(reason) = &tunnel.disabled_reason {
+                return Err(format!("the tunnel is disabled: {reason}"));
+            }
+            return Ok(tunnel.display_address.clone());
         }
         tokio::time::sleep(Duration::from_secs(1)).await;
     }
     Err("the tunnel didn't get an address".to_string())
+}
+
+fn tunnel_local_port(tunnel: &AgentTunnelV1) -> Option<u16> {
+    tunnel
+        .agent_config
+        .fields
+        .iter()
+        .find(|field| field.name == "local_port")
+        .and_then(|field| field.value.parse().ok())
 }
 
 /// Runs the playit.gg agent in the app (once), which carries the tunnels'
@@ -420,7 +491,7 @@ async fn ensure_agent(secret: &str) -> Result<(), String> {
     let api =
         PlayitApi::create(PLAYIT_API.to_string(), Some(secret.to_string()));
     let lookup = Arc::new(OriginLookup::default());
-    if let Ok(run_data) = api.agents_rundata().await {
+    if let Ok(run_data) = api.v1_agents_rundata().await {
         lookup.update_from_run_data(&run_data).await;
     }
     let agent = PlayitAgent::new(
@@ -434,18 +505,21 @@ async fn ensure_agent(secret: &str) -> Result<(), String> {
     )
     .await
     .map_err(|error| format!("{error:?}"))?;
-    let running = agent.keep_running();
+    let cancel = agent.cancellation_token();
+    let running = Arc::new(AtomicBool::new(true));
     tokio::spawn(agent.run());
 
-    // Keep the tunnel list current while the agent runs.
+    // Keep the tunnel list current while the agent runs, and stop it on
+    // unlink.
     let refresh = running.clone();
     tokio::spawn(async move {
         while refresh.load(Ordering::SeqCst) {
             tokio::time::sleep(Duration::from_secs(10)).await;
-            if let Ok(run_data) = api.agents_rundata().await {
+            if let Ok(run_data) = api.v1_agents_rundata().await {
                 lookup.update_from_run_data(&run_data).await;
             }
         }
+        cancel.cancel();
     });
     playit.agent = Some(running);
     Ok(())
@@ -483,8 +557,8 @@ mod tests {
         let setup = api
             .claim_setup(ReqClaimSetup {
                 code: to_hex(&bytes),
-                agent_type: AgentType::SelfManaged,
-                version: "Threadrinth test".to_string(),
+                agent_type: ClaimAgentType::SelfManaged,
+                version: PLAYIT_AGENT_VERSION.to_string(),
             })
             .await
             .unwrap();

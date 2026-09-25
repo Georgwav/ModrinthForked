@@ -17,6 +17,7 @@ pub fn init<R: Runtime>() -> tauri::plugin::TauriPlugin<R> {
             curseforge_status,
             curseforge_search,
             curseforge_project,
+            curseforge_description,
             curseforge_files,
             curseforge_install_mod,
             curseforge_install_modpack,
@@ -50,6 +51,12 @@ pub async fn curseforge_search(
 #[tauri::command]
 pub async fn curseforge_project(project_id: u32) -> Result<CurseForgeProject> {
     Ok(theseus::curseforge::get_project(project_id).await?)
+}
+
+/// A project's description, as HTML.
+#[tauri::command]
+pub async fn curseforge_description(project_id: u32) -> Result<String> {
+    Ok(theseus::curseforge::get_description(project_id).await?)
 }
 
 #[tauri::command]

@@ -1,22 +1,28 @@
 <script setup lang="ts">
 import {
+	CheckCircleIcon,
+	CircleAlertIcon,
 	ClipboardCopyIcon,
 	CpuIcon,
 	FolderOpenIcon,
 	GlobeIcon,
 	MemoryStickIcon,
 	PlayIcon,
+	RefreshCwIcon,
 	SaveIcon,
 	SendIcon,
 	ServerIcon,
 	SkullIcon,
+	SpinnerIcon,
 	StopCircleIcon,
 	TrashIcon,
 	UpdatedIcon,
 	UsersIcon,
+	XCircleIcon,
 } from '@modrinth/assets'
 import {
 	Admonition,
+	Avatar,
 	Button,
 	Checkbox,
 	Chips,
@@ -32,6 +38,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+	check_server_reachability,
 	type ConsoleLine,
 	delete_server,
 	edit_server,
@@ -49,8 +56,9 @@ import {
 	stop_server,
 	sync_server_mods,
 } from '@/helpers/hosting'
+import { get as getInstance, getInstanceIconUrl } from '@/helpers/instance'
 import { openPath } from '@/helpers/utils'
-import { useBreadcrumb } from '@/providers/breadcrumbs'
+import { useBreadcrumb, useRootBreadcrumb } from '@/providers/breadcrumbs'
 
 defineOptions({ name: 'LocalServerPage' })
 
@@ -60,6 +68,7 @@ const route = useRoute()
 const router = useRouter()
 
 const messages = defineMessages({
+	host: { id: 'app.hosting.heading', defaultMessage: 'Host' },
 	offline: { id: 'app.hosting.state.offline', defaultMessage: 'Offline' },
 	starting: { id: 'app.hosting.state.starting', defaultMessage: 'Starting' },
 	running: { id: 'app.hosting.state.running', defaultMessage: 'Online' },
@@ -78,10 +87,36 @@ const messages = defineMessages({
 	memory: { id: 'app.hosting.memory', defaultMessage: 'Memory' },
 	players: { id: 'app.hosting.players-label', defaultMessage: 'Players' },
 	address: { id: 'app.hosting.address', defaultMessage: 'Address' },
-	lanAddress: {
-		id: 'app.hosting.lan-address',
-		defaultMessage: 'On this computer: localhost{port}',
+	sameNetwork: { id: 'app.hosting.address.same-network', defaultMessage: 'Same network' },
+	thisComputer: { id: 'app.hosting.address.this-computer', defaultMessage: 'This computer' },
+	internet: { id: 'app.hosting.address.internet', defaultMessage: 'Internet' },
+	forwarded: { id: 'app.hosting.forwarding.upnp', defaultMessage: 'Port forwarded' },
+	playit: { id: 'app.hosting.forwarding.playit', defaultMessage: 'playit.gg tunnel' },
+	checking: {
+		id: 'app.hosting.forwarding.checking',
+		defaultMessage: 'Checking from the internet…',
 	},
+	reachable: { id: 'app.hosting.forwarding.reachable', defaultMessage: 'Works from the internet' },
+	unreachable: {
+		id: 'app.hosting.forwarding.unreachable',
+		defaultMessage: 'Not reachable from the internet',
+	},
+	forwardingOff: { id: 'app.hosting.forwarding.off', defaultMessage: 'Port forwarding off' },
+	forwardingFailed: {
+		id: 'app.hosting.forwarding.failed',
+		defaultMessage: 'Port forwarding failed',
+	},
+	unreachableHint: {
+		id: 'app.hosting.forwarding.unreachable-hint',
+		defaultMessage:
+			'Your router or internet provider blocks the port. Link playit.gg on the Host page for an address that always works.',
+	},
+	offHint: {
+		id: 'app.hosting.forwarding.off-hint',
+		defaultMessage:
+			'Only players on your network can join. Turn on public access in Settings to let friends join over the internet.',
+	},
+	checkAgain: { id: 'app.hosting.forwarding.check-again', defaultMessage: 'Check again' },
 	copy: { id: 'app.hosting.copy', defaultMessage: 'Copy' },
 	copied: { id: 'app.hosting.copied', defaultMessage: 'Address copied' },
 	openFolder: { id: 'app.hosting.open-folder', defaultMessage: 'Open folder' },
@@ -183,12 +218,29 @@ const form = ref<{
 	seed: '',
 })
 
-useBreadcrumb({
-	slot: 'page',
-	id: () => `host-${id.value}`,
-	label: () => server.value?.name ?? '',
-	to: () => `/host/${encodeURIComponent(id.value)}`,
+const iconUrl = ref<string | null>(null)
+
+// Host > server, also when opened from the running servers in the top bar.
+const hostBreadcrumb = useRootBreadcrumb({
+	slot: 'root',
+	id: 'host',
+	label: () => formatMessage(messages.host),
+	to: '/host',
+	visual: { type: 'icon', component: ServerIcon },
 })
+useBreadcrumb(
+	{
+		slot: 'page',
+		id: () => `host-${id.value}`,
+		label: () => server.value?.name ?? '',
+		to: () => `/host/${encodeURIComponent(id.value)}`,
+		visual: () =>
+			iconUrl.value
+				? { type: 'image', src: iconUrl.value, alt: server.value?.name, tintBy: id.value }
+				: undefined,
+	},
+	{ parent: hostBreadcrumb },
+)
 
 const state = computed(() => status.value?.state ?? 'offline')
 const stateLabel = computed(() => formatMessage(messages[state.value]))
@@ -218,6 +270,10 @@ const portSuffix = computed(() =>
 async function load() {
 	try {
 		server.value = await get_server(id.value)
+		const instanceId = server.value.instance_id
+		iconUrl.value = instanceId
+			? getInstanceIconUrl((await getInstance(instanceId).catch(() => null))?.icon_path)
+			: null
 		const properties = Object.fromEntries(await server_properties(id.value))
 		form.value = {
 			name: server.value.name,
@@ -274,6 +330,102 @@ async function sendCommand() {
 	if (!text) return
 	command.value = ''
 	await run(() => send_server_command(id.value, text))
+}
+
+const localhostAddress = computed(() => `localhost${portSuffix.value}`)
+const mainAddress = computed(
+	() =>
+		status.value?.public_address?.address ?? status.value?.lan_address ?? localhostAddress.value,
+)
+const otherAddresses = computed(() =>
+	[
+		{
+			label: formatMessage(messages.internet),
+			address: status.value?.public_address?.address,
+		},
+		{ label: formatMessage(messages.sameNetwork), address: status.value?.lan_address },
+		{ label: formatMessage(messages.thisComputer), address: localhostAddress.value },
+	].filter(
+		(entry): entry is { label: string; address: string } =>
+			!!entry.address && entry.address !== mainAddress.value,
+	),
+)
+
+/** The port forwarding indicator next to the address. */
+const forwarding = computed(() => {
+	const current = status.value
+	if (!current || !server.value || current.state === 'offline') return null
+	if (server.value.public_access !== 'auto') {
+		return {
+			label: formatMessage(messages.forwardingOff),
+			icon: CircleAlertIcon,
+			spin: false,
+			class: 'bg-button-bg text-secondary',
+		}
+	}
+	if (!current.public_address) {
+		if (current.public_error) {
+			return {
+				label: formatMessage(messages.forwardingFailed),
+				icon: XCircleIcon,
+				spin: false,
+				class: 'bg-highlight-red text-red',
+			}
+		}
+		return {
+			label: formatMessage(messages.checking),
+			icon: SpinnerIcon,
+			spin: true,
+			class: 'bg-button-bg text-secondary',
+		}
+	}
+	const via = formatMessage(
+		current.public_address.via === 'upnp' ? messages.forwarded : messages.playit,
+	)
+	switch (current.reachability) {
+		case 'reachable':
+			return {
+				label: `${via} · ${formatMessage(messages.reachable)}`,
+				icon: CheckCircleIcon,
+				spin: false,
+				class: 'bg-highlight-green text-green',
+			}
+		case 'unreachable':
+			return {
+				label: `${via} · ${formatMessage(messages.unreachable)}`,
+				icon: XCircleIcon,
+				spin: false,
+				class: 'bg-highlight-red text-red',
+			}
+		case 'checking':
+			return {
+				label: `${via} · ${formatMessage(messages.checking)}`,
+				icon: SpinnerIcon,
+				spin: true,
+				class: 'bg-button-bg text-secondary',
+			}
+		default:
+			return {
+				label: via,
+				icon: CheckCircleIcon,
+				spin: false,
+				class: 'bg-button-bg text-primary',
+			}
+	}
+})
+const forwardingHint = computed(() => {
+	if (!status.value || status.value.state === 'offline') return null
+	if (server.value?.public_access !== 'auto') return formatMessage(messages.offHint)
+	if (status.value.reachability === 'unreachable') return formatMessage(messages.unreachableHint)
+	return null
+})
+
+async function checkReachability() {
+	try {
+		await check_server_reachability(id.value)
+	} catch (error) {
+		handleError(error as Error)
+	}
 }
 
 async function copyAddress(address: string) {
@@ -369,7 +521,7 @@ onUnmounted(() => {
 	<div v-if="server" class="flex h-full flex-col gap-4 p-6">
 		<div class="flex flex-wrap items-center justify-between gap-4">
 			<div class="flex items-center gap-3">
-				<ServerIcon class="h-10 w-10 text-secondary" />
+				<Avatar :src="iconUrl" :alt="server.name" :tint-by="id" size="64px" />
 				<div class="flex flex-col gap-1">
 					<h1 class="m-0 text-2xl font-extrabold text-contrast">{{ server.name }}</h1>
 					<span class="text-sm text-secondary">
@@ -419,7 +571,7 @@ onUnmounted(() => {
 			:header="formatMessage(messages.eulaNeeded)"
 		/>
 
-		<div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+		<div class="grid grid-cols-3 gap-3">
 			<div class="flex flex-col gap-1 rounded-2xl bg-bg-raised p-4">
 				<span class="flex items-center gap-2 text-sm text-secondary">
 					<CpuIcon /> {{ formatMessage(messages.cpu) }}
@@ -443,24 +595,52 @@ onUnmounted(() => {
 					{{ status.players.join(', ') }}
 				</span>
 			</div>
-			<div class="flex flex-col gap-1 rounded-2xl bg-bg-raised p-4">
+		</div>
+
+		<div class="flex flex-col gap-3 rounded-2xl bg-bg-raised p-4">
+			<div class="flex flex-wrap items-center gap-3">
 				<span class="flex items-center gap-2 text-sm text-secondary">
 					<GlobeIcon /> {{ formatMessage(messages.address) }}
 				</span>
-				<div v-if="status?.public_address" class="flex items-center gap-2">
-					<span class="truncate text-lg font-bold text-contrast">
-						{{ status.public_address.address }}
-					</span>
-					<Button type="outlined" size="sm" @click="copyAddress(status.public_address.address)">
-						<ClipboardCopyIcon />
-					</Button>
-				</div>
-				<span v-else-if="status?.public_error" class="text-sm text-orange">
-					{{ status.public_error }}
+				<span
+					v-if="forwarding"
+					class="flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-semibold"
+					:class="forwarding.class"
+				>
+					<component :is="forwarding.icon" :class="{ 'animate-spin': forwarding.spin }" />
+					{{ forwarding.label }}
 				</span>
-				<span class="text-sm text-secondary">
-					{{ formatMessage(messages.lanAddress, { port: portSuffix }) }}
-				</span>
+				<Button
+					v-if="status?.public_address && status.reachability !== 'checking'"
+					type="quiet"
+					size="sm"
+					@click="checkReachability"
+				>
+					<RefreshCwIcon />
+					{{ formatMessage(messages.checkAgain) }}
+				</Button>
+			</div>
+			<div class="flex flex-wrap items-center gap-2">
+				<span class="truncate text-2xl font-bold text-contrast">{{ mainAddress }}</span>
+				<Button type="outlined" size="sm" @click="copyAddress(mainAddress)">
+					<ClipboardCopyIcon />
+					{{ formatMessage(messages.copy) }}
+				</Button>
+			</div>
+			<p v-if="forwardingHint" class="m-0 text-sm text-secondary">{{ forwardingHint }}</p>
+			<p v-if="status?.public_error" class="m-0 text-sm text-orange">{{ status.public_error }}</p>
+			<div class="flex flex-wrap gap-2">
+				<button
+					v-for="entry in otherAddresses"
+					:key="entry.label"
+					v-tooltip="formatMessage(messages.copy)"
+					class="flex items-center gap-2 rounded-xl border-none bg-button-bg px-3 py-2 text-sm text-primary hover:brightness-110"
+					@click="copyAddress(entry.address)"
+				>
+					<span class="text-secondary">{{ entry.label }}</span>
+					<span class="font-semibold text-contrast">{{ entry.address }}</span>
+					<ClipboardCopyIcon />
+				</button>
 			</div>
 		</div>
 

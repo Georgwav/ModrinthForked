@@ -64,8 +64,17 @@ export default new createRouter({
 		},
 		{
 			path: '/curseforge',
+			redirect: '/curseforge/modpack',
+		},
+		{
+			path: '/curseforge/:projectType',
 			name: 'CurseForge',
 			component: () => import('@/pages/CurseForge.vue'),
+		},
+		{
+			path: '/curseforge/:projectType/:id',
+			name: 'CurseForgeProject',
+			component: () => import('@/pages/CurseForgeProject.vue'),
 		},
 		{
 			path: '/skins',

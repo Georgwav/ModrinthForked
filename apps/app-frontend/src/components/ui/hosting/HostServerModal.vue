@@ -2,6 +2,7 @@
 import { ServerIcon, SpinnerIcon, XIcon } from '@modrinth/assets'
 import {
 	Admonition,
+	Avatar,
 	Button,
 	Checkbox,
 	Chips,
@@ -14,6 +15,7 @@ import {
 	Input,
 	NewModal,
 	Slider,
+	useRelativeTime,
 	useVIntl,
 } from '@modrinth/ui'
 import { openUrl } from '@tauri-apps/plugin-opener'
@@ -21,7 +23,12 @@ import { computed, ref, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { create_server } from '@/helpers/hosting'
-import { get_pack_export_candidates, list, type PackExportCandidate } from '@/helpers/instance'
+import {
+	get_pack_export_candidates,
+	getInstanceIconUrl,
+	list,
+	type PackExportCandidate,
+} from '@/helpers/instance'
 import { server_pack_selection } from '@/helpers/threadrinth'
 import type { GameInstance } from '@/helpers/types'
 import { getWorldDisplayName, refreshWorlds, type SingleplayerWorld } from '@/helpers/worlds'
@@ -29,6 +36,7 @@ import { getWorldDisplayName, refreshWorlds, type SingleplayerWorld } from '@/he
 const { formatMessage } = useVIntl()
 const { handleError } = injectNotificationManager()
 const router = useRouter()
+const formatRelativeTime = useRelativeTime()
 
 const emit = defineEmits<{
 	created: [id: string]
@@ -108,9 +116,20 @@ const instanceOptions = computed<ComboboxOption<string>[]>(() =>
 			subLabel: `${other.loader} ${other.game_version}`,
 		})),
 )
-const worldOptions = computed<ComboboxOption<string>[]>(() =>
-	worlds.value.map((world) => ({ value: world.path, label: getWorldDisplayName(world) })),
+const instanceIcons = computed(
+	() => new Map(instances.value.map((other) => [other.id, getInstanceIconUrl(other.icon_path)])),
 )
+const worldOptions = computed<ComboboxOption<string>[]>(() =>
+	worlds.value.map((world) => ({
+		value: world.path,
+		label: getWorldDisplayName(world),
+		// Worlds often share a name, so the folder and last played tell them apart.
+		subLabel: [world.path, world.last_played ? formatRelativeTime(world.last_played) : null]
+			.filter(Boolean)
+			.join(' · '),
+	})),
+)
+const worldIcons = computed(() => new Map(worlds.value.map((world) => [world.path, world.icon])))
 const canCreate = computed(
 	() =>
 		!!instance.value &&
@@ -240,7 +259,27 @@ defineExpose({ show })
 					searchable
 					sync-with-selection
 					@update:model-value="(value) => selectInstance(value as string | undefined)"
-				/>
+				>
+					<template #option="{ item, isSelected }">
+						<div class="flex items-center gap-3">
+							<Avatar
+								:src="instanceIcons.get(item.value)"
+								size="36px"
+								no-shadow
+								class="!rounded-lg shrink-0"
+							/>
+							<div class="flex min-w-0 flex-col gap-1">
+								<span
+									class="truncate font-semibold leading-tight"
+									:class="isSelected ? 'text-green' : 'text-primary'"
+								>
+									{{ item.label }}
+								</span>
+								<span class="truncate text-sm text-secondary">{{ item.subLabel }}</span>
+							</div>
+						</div>
+					</template>
+				</Combobox>
 			</label>
 			<template v-if="instance">
 				<label class="flex flex-col gap-2">
@@ -277,14 +316,54 @@ defineExpose({ show })
 									if (value) void loadWorlds(value as string)
 								}
 							"
-						/>
+						>
+							<template #option="{ item, isSelected }">
+								<div class="flex items-center gap-3">
+									<Avatar
+										:src="instanceIcons.get(item.value)"
+										size="36px"
+										no-shadow
+										class="!rounded-lg shrink-0"
+									/>
+									<div class="flex min-w-0 flex-col gap-1">
+										<span
+											class="truncate font-semibold leading-tight"
+											:class="isSelected ? 'text-green' : 'text-primary'"
+										>
+											{{ item.label }}
+										</span>
+										<span class="truncate text-sm text-secondary">{{ item.subLabel }}</span>
+									</div>
+								</div>
+							</template>
+						</Combobox>
 						<Combobox
 							v-if="worldOptions.length > 0"
 							v-model="worldPath"
 							:options="worldOptions"
 							:placeholder="formatMessage(messages.worldPlaceholder)"
 							sync-with-selection
-						/>
+						>
+							<template #option="{ item, isSelected }">
+								<div class="flex items-center gap-3">
+									<Avatar
+										:src="worldIcons.get(item.value)"
+										size="36px"
+										no-shadow
+										class="!rounded-lg shrink-0"
+									/>
+									<div class="flex min-w-0 flex-col gap-1">
+										<span
+											class="truncate font-semibold leading-tight"
+											:class="isSelected ? 'text-green' : 'text-primary'"
+										>
+											{{ item.label }}
+										</span>
+										<span class="truncate text-sm text-secondary">{{ item.subLabel }}</span>
+									</div>
+								</div>
+							</template>
+						</Combobox>
 						<p v-else class="m-0 text-secondary">{{ formatMessage(messages.noWorlds) }}</p>
 					</template>
 				</div>

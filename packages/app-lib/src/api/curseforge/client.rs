@@ -15,6 +15,7 @@ pub(crate) const CLASS_MODS: u32 = 6;
 pub(crate) const CLASS_MODPACKS: u32 = 4471;
 pub(crate) const CLASS_RESOURCE_PACKS: u32 = 12;
 pub(crate) const CLASS_SHADERS: u32 = 6552;
+pub(crate) const CLASS_DATA_PACKS: u32 = 6945;
 /// `relationType` of a dependency the file can't work without.
 pub(crate) const RELATION_REQUIRED: u32 = 3;
 /// `algo` of a SHA-1 file hash.
@@ -77,7 +78,17 @@ pub(crate) struct Mod {
     pub main_file_id: u32,
     pub latest_files_indexes: Vec<FileIndex>,
     pub date_modified: Option<String>,
+    pub date_created: Option<String>,
     pub allow_mod_distribution: Option<bool>,
+    pub categories: Vec<ModCategory>,
+    pub thumbs_up_count: u64,
+    pub screenshots: Vec<ModAsset>,
+}
+
+#[derive(Deserialize, Debug, Clone, Default)]
+#[serde(default)]
+pub(crate) struct ModCategory {
+    pub name: String,
 }
 
 #[derive(Deserialize, Debug, Clone, Default)]
@@ -227,6 +238,15 @@ pub(crate) async fn get_files(ids: &[u32]) -> crate::Result<Vec<File>> {
         files.extend(response.data);
     }
     Ok(files)
+}
+
+/// A project's description, as HTML.
+pub(crate) async fn get_description(id: u32) -> crate::Result<String> {
+    Ok(
+        get::<DataResponse<String>>(&format!("/v1/mods/{id}/description"))
+            .await?
+            .data,
+    )
 }
 
 pub(crate) async fn get_mod(id: u32) -> crate::Result<Mod> {

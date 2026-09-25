@@ -269,6 +269,7 @@ watch(
 const forceSidebar = computed(
 	() =>
 		route.path.startsWith('/browse') ||
+		route.path.startsWith('/curseforge') ||
 		route.path.startsWith('/project') ||
 		route.path.startsWith('/user'),
 )
@@ -2286,7 +2287,11 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			>
 				<CompassIcon />
 			</NavButton>
-			<NavButton v-tooltip.right="'CurseForge'" to="/curseforge">
+			<NavButton
+				v-tooltip.right="'CurseForge'"
+				to="/curseforge/modpack"
+				:is-primary="(r) => r.path.startsWith('/curseforge')"
+			>
 				<CurseForgeIcon />
 			</NavButton>
 			<NavButton

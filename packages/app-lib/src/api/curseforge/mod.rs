@@ -20,7 +20,8 @@ pub(crate) use mods::is_downloadable;
 pub use mods::{
     CurseForgeClass, CurseForgeFile, CurseForgeFiles, CurseForgeModInstall,
     CurseForgeProject, CurseForgeSearchQuery, CurseForgeSearchResults,
-    CurseForgeSort, get_files, get_project, install_mod, search,
+    CurseForgeSort, get_description, get_files, get_project, install_mod,
+    search,
 };
 
 /// Whether this build can talk to CurseForge.

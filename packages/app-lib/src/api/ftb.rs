@@ -1,4 +1,4 @@
-//! Feed the Beast modpacks, from the public modpacks.ch API (no key needed),
+//! Feed the Beast modpacks, from the public Feed the Beast API (no key needed),
 //! installed as new instances like CurseForge modpacks.
 
 use crate::State;
@@ -14,7 +14,12 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
-const API_URL: &str = "https://api.modpacks.ch/public";
+/// FTB's current API first, then the older modpacks.ch domain it replaced,
+/// which some networks can't reach.
+const API_URLS: [&str; 2] = [
+    "https://api.feed-the-beast.com/v1/modpacks/public",
+    "https://api.modpacks.ch/public",
+];
 const WEBSITE_URL: &str = "https://www.feed-the-beast.com/modpacks";
 
 /// A list of pack ids, from the popular list or a search.
@@ -30,6 +35,8 @@ pub(crate) struct ApiPack {
     pub id: u32,
     pub name: String,
     pub synopsis: String,
+    pub description: String,
+    pub released: i64,
     pub art: Vec<ApiArt>,
     pub authors: Vec<ApiAuthor>,
     pub installs: u64,
@@ -137,12 +144,17 @@ pub struct FtbPack {
     pub id: u32,
     pub name: String,
     pub summary: String,
+    /// Markdown.
+    pub description: String,
     pub icon_url: Option<String>,
+    pub banner_url: Option<String>,
     pub authors: Vec<String>,
     pub installs: u64,
     pub plays: u64,
     /// Unix seconds.
     pub updated: i64,
+    /// Unix seconds.
+    pub released: i64,
     pub tags: Vec<String>,
     pub website_url: String,
     /// Newest first.
@@ -217,6 +229,14 @@ pub(crate) fn pack_from_api(pack: ApiPack) -> FtbPack {
         website_url: format!("{WEBSITE_URL}/{}-{}", pack.id, slug(&pack.name)),
         name: pack.name,
         summary: pack.synopsis,
+        description: pack.description,
+        released: pack.released,
+        banner_url: pack
+            .art
+            .iter()
+            .find(|x| x.kind == "splash")
+            .map(|x| x.url.clone())
+            .filter(|x| !x.is_empty()),
         icon_url,
         authors: pack.authors.into_iter().map(|x| x.name).collect(),
         installs: pack.installs,
@@ -229,16 +249,27 @@ pub(crate) fn pack_from_api(pack: ApiPack) -> FtbPack {
 
 async fn get<T: DeserializeOwned>(path: &str) -> crate::Result<T> {
     let state = State::get().await?;
-    fetch_json(
-        Method::GET,
-        &format!("{API_URL}{path}"),
-        None,
-        None,
-        None,
-        &state.api_semaphore,
-        &state.pool,
-    )
-    .await
+    let mut last_error = None;
+    for api_url in API_URLS {
+        match fetch_json(
+            Method::GET,
+            &format!("{api_url}{path}"),
+            None,
+            None,
+            None,
+            &state.api_semaphore,
+            &state.pool,
+        )
+        .await
+        {
+            Ok(value) => return Ok(value),
+            Err(error) => {
+                tracing::warn!("Feed the Beast API {api_url} failed: {error}");
+                last_error = Some(error);
+            }
+        }
+    }
+    Err(last_error.expect("API_URLS is not empty"))
 }
 
 pub async fn get_pack(id: u32) -> crate::Result<FtbPack> {

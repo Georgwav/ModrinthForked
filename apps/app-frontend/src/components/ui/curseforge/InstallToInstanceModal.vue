@@ -2,6 +2,7 @@
 import { DownloadIcon, XIcon } from '@modrinth/assets'
 import {
 	Admonition,
+	Avatar,
 	Button,
 	Combobox,
 	type ComboboxOption,
@@ -13,8 +14,12 @@ import {
 } from '@modrinth/ui'
 import { computed, ref } from 'vue'
 
-import { curseforge_install_mod, type CurseForgeModInstall } from '@/helpers/curseforge'
-import { list } from '@/helpers/instance'
+import {
+	curseforge_install_mod,
+	type CurseForgeClass,
+	type CurseForgeModInstall,
+} from '@/helpers/curseforge'
+import { getInstanceIconUrl, list } from '@/helpers/instance'
 import type { GameInstance } from '@/helpers/types'
 
 const { formatMessage } = useVIntl()
@@ -34,7 +39,7 @@ const messages = defineMessages({
 	newestDescription: {
 		id: 'app.curseforge.install.newest-description',
 		defaultMessage:
-			'Installs the newest version for the instance’s Minecraft version and mod loader, with its required dependencies.',
+			'Installs the newest version for the instance’s Minecraft version (and mod loader, with required dependencies, for mods).',
 	},
 	fileDescription: {
 		id: 'app.curseforge.install.file-description',
@@ -50,7 +55,7 @@ const messages = defineMessages({
 			'{instance} has no mod loader. Mods need an instance with Forge, NeoForge, Fabric or Quilt.',
 	},
 	installButton: { id: 'app.curseforge.install.button', defaultMessage: 'Install' },
-	installed: { id: 'app.curseforge.install.installed', defaultMessage: 'Mod installed' },
+	installed: { id: 'app.curseforge.install.installed', defaultMessage: 'Installed' },
 	installedDescription: {
 		id: 'app.curseforge.install.installed-description',
 		defaultMessage: '{count, plural, one {# file} other {# files}} added to {instance}.',
@@ -72,6 +77,17 @@ const projectId = ref<number>(0)
 const projectName = ref('')
 const fileId = ref<number | null>(null)
 const fileName = ref<string | null>(null)
+const projectClass = ref<CurseForgeClass>('mod')
+/** Only mods need a mod loader. */
+const needsLoader = computed(
+	() => projectClass.value === 'mod' && target.value?.loader === 'vanilla',
+)
+const instanceIcons = computed(
+	() =>
+		new Map(
+			instances.value.map((instance) => [instance.id, getInstanceIconUrl(instance.icon_path)]),
+		),
+)
 const installing = ref(false)
 
 const targetOptions = computed<ComboboxOption<string>[]>(() =>
@@ -86,8 +102,12 @@ const targetOptions = computed<ComboboxOption<string>[]>(() =>
 )
 const target = computed(() => instances.value.find((instance) => instance.id === targetId.value))
 
-async function show(project: { id: number; name: string }, file?: { id: number; name: string }) {
+async function show(
+	project: { id: number; name: string; class?: CurseForgeClass },
+	file?: { id: number; name: string },
+) {
 	projectId.value = project.id
+	projectClass.value = project.class ?? 'mod'
 	projectName.value = project.name
 	fileId.value = file?.id ?? null
 	fileName.value = file?.name ?? null
@@ -164,10 +184,30 @@ defineExpose({ show, hide })
 					:placeholder="formatMessage(messages.instancePlaceholder)"
 					searchable
 					sync-with-selection
-				/>
+				>
+					<template #option="{ item, isSelected }">
+						<div class="flex items-center gap-3">
+							<Avatar
+								:src="instanceIcons.get(item.value)"
+								size="36px"
+								no-shadow
+								class="!rounded-lg shrink-0"
+							/>
+							<div class="flex min-w-0 flex-col gap-1">
+								<span
+									class="truncate font-semibold leading-tight"
+									:class="isSelected ? 'text-green' : 'text-primary'"
+								>
+									{{ item.label }}
+								</span>
+								<span class="truncate text-sm text-secondary">{{ item.subLabel }}</span>
+							</div>
+						</div>
+					</template>
+				</Combobox>
 			</label>
 			<Admonition
-				v-if="target && target.loader === 'vanilla'"
+				v-if="target && needsLoader"
 				type="warning"
 				:header="formatMessage(messages.vanillaHeader)"
 			>
@@ -184,7 +224,7 @@ defineExpose({ show, hide })
 				<Button
 					type="colored"
 					color="brand"
-					:disabled="!target || target.loader === 'vanilla' || installing"
+					:disabled="!target || needsLoader || installing"
 					:loading="installing"
 					@click="install"
 				>
