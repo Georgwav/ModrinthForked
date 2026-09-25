@@ -2,6 +2,7 @@
 import { ChevronDownIcon, ExternalIcon } from '@modrinth/assets'
 import { Avatar, Button, defineMessages, TagItem, useVIntl } from '@modrinth/ui'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { computed } from 'vue'
 
 const { formatMessage } = useVIntl()
 
@@ -15,6 +16,12 @@ const props = defineProps<{
 	websiteUrl: string | null
 	expanded: boolean
 }>()
+
+// The same tag can come from several sources (like a pack's newest version
+// and its own tags).
+const uniqueTags = computed(() => [
+	...new Map(props.tags.map((tag) => [tag.toLowerCase(), tag])).values(),
+])
 
 const emit = defineEmits<{
 	toggle: []
@@ -47,7 +54,7 @@ function openWebsite() {
 					<span v-for="stat in stats" :key="stat" class="text-sm font-semibold text-secondary">
 						{{ stat }}
 					</span>
-					<TagItem v-for="tag in tags" :key="tag">{{ tag }}</TagItem>
+					<TagItem v-for="tag in uniqueTags" :key="tag">{{ tag }}</TagItem>
 				</div>
 			</div>
 			<div class="flex shrink-0 flex-col items-end gap-2">

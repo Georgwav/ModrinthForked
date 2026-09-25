@@ -8,7 +8,9 @@ use super::{create_mrpack_json, get, get_full_path};
 use crate::pack::install_from::EnvType;
 use crate::state::content_store::{ReadableContent, content_file_path};
 use crate::state::instances::adapters::sqlite::content_rows;
-use crate::state::{InstanceMetadata, ModLoader, SideType, State};
+use crate::state::{
+    InstanceInstallStage, InstanceMetadata, ModLoader, SideType, State,
+};
 use crate::util::fetch::{fetch, fetch_json};
 use crate::util::io::{self, IOError};
 use reqwest::Method;
@@ -60,6 +62,18 @@ async fn with_loader_version(
     let mut metadata = get(instance_id).await?.ok_or_else(|| {
         crate::ErrorKind::InputError("Unknown instance".to_string())
     })?;
+    // Mods are only recognized (to leave out client-only ones) once the
+    // install has finished.
+    if matches!(
+        metadata.instance.install_stage,
+        InstanceInstallStage::MinecraftInstalling
+            | InstanceInstallStage::PackInstalling
+    ) {
+        return Err(crate::ErrorKind::InputError(
+            "Wait until the instance finishes installing".to_string(),
+        )
+        .into());
+    }
     let content_set = &mut metadata.applied_content_set;
     if content_set.loader != ModLoader::Vanilla {
         let mut version = crate::launcher::get_loader_version_from_profile(

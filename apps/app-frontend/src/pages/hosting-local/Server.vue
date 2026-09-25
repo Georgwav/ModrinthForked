@@ -341,6 +341,13 @@ async function openFolder() {
 	await run(async () => openPath(await server_folder(id.value)))
 }
 
+// Coming back to the console shows the newest lines.
+watch(tab, async (value) => {
+	if (value !== 'console') return
+	await nextTick()
+	consoleBox.value?.scrollTo({ top: consoleBox.value.scrollHeight })
+})
+
 watch(id, () => {
 	lines.value = []
 	confirmDelete.value = false

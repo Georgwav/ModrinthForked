@@ -129,6 +129,7 @@ async function exportPack() {
 			excludedPaths.value,
 		)
 		popupNotificationManager.addPopupNotification({
+			contentType: 'standard',
 			title: formatMessage(messages.exported),
 			text: formatMessage(messages.exportedDescription, { count: report.mods_included }),
 			type: 'success',

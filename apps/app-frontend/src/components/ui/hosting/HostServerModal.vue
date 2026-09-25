@@ -252,6 +252,7 @@ defineExpose({ show })
 					<Chips
 						v-model="worldChoice"
 						:items="['new', 'copy'] as WorldChoice[]"
+						:capitalize="false"
 						:format-label="
 							(item: WorldChoice) =>
 								formatMessage(item === 'new' ? messages.newWorld : messages.copyWorld)
