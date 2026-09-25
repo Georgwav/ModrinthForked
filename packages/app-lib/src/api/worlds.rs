@@ -314,7 +314,7 @@ async fn get_all_worlds_in_instance(
             .await
             .unwrap_or_else(|error| {
                 tracing::warn!("Failed to read attached world data: {error}");
-                Default::default()
+                std::collections::HashMap::default()
             });
     if !attached_data.is_empty() {
         for world in &mut worlds {
