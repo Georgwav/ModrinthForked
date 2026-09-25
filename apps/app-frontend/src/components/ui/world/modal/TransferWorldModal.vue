@@ -2,6 +2,7 @@
 import { CopyIcon, MoveIcon, XIcon } from '@modrinth/assets'
 import {
 	Admonition,
+	Avatar,
 	Button,
 	Combobox,
 	type ComboboxOption,
@@ -14,7 +15,7 @@ import {
 } from '@modrinth/ui'
 import { computed, ref } from 'vue'
 
-import { list } from '@/helpers/instance'
+import { getInstanceIconUrl, list } from '@/helpers/instance'
 import { transfer_world } from '@/helpers/threadrinth'
 import type { GameInstance } from '@/helpers/types'
 import { getWorldDisplayName, type SingleplayerWorld } from '@/helpers/worlds.ts'
@@ -69,6 +70,9 @@ const targetId = ref<string>()
 const move = ref(false)
 const transferring = ref(false)
 
+const iconsById = computed(
+	() => new Map(instances.value.map((other) => [other.id, getInstanceIconUrl(other.icon_path)])),
+)
 const targetOptions = computed<ComboboxOption<string>[]>(() =>
 	instances.value
 		.filter((other) => other.id !== props.instance.id && !other.quarantined)
@@ -145,7 +149,27 @@ defineExpose({ show, hide })
 					:placeholder="formatMessage(messages.targetPlaceholder)"
 					searchable
 					sync-with-selection
-				/>
+				>
+					<template #option="{ item, isSelected }">
+						<div class="flex items-center gap-3">
+							<Avatar
+								:src="iconsById.get(item.value)"
+								size="36px"
+								no-shadow
+								class="!rounded-lg shrink-0"
+							/>
+							<div class="flex flex-col gap-1">
+								<span
+									class="font-semibold leading-tight"
+									:class="isSelected ? 'text-green' : 'text-primary'"
+								>
+									{{ item.label }}
+								</span>
+								<span class="text-sm text-secondary">{{ item.subLabel }}</span>
+							</div>
+						</div>
+					</template>
+				</Combobox>
 			</label>
 			<div class="flex items-center justify-between gap-4">
 				<div class="flex flex-col">
