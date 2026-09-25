@@ -30,6 +30,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       upstream: ${{ steps.version.outputs.upstream }}
+      notes: ${{ steps.version.outputs.notes }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,7 +57,13 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "upstream=$(cat scripts/upstream-version.txt)" >> "$GITHUB_OUTPUT"
+          upstream=$(cat scripts/upstream-version.txt)
+          echo "upstream=$upstream" >> "$GITHUB_OUTPUT"
+          {
+            echo "notes<<NOTES_EOF"
+            python3 scripts/release-notes.py "$version" "$upstream"
+            echo "NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
           echo "Releasing Threadrinth $version"
 
   build:
@@ -129,13 +136,7 @@ jobs:
           tagName: v${{ env.VERSION }}
           releaseName: Threadrinth v${{ env.VERSION }}
           releaseCommitish: ${{ github.sha }}
-          releaseBody: |
-            Threadrinth ${{ env.VERSION }}, based on Modrinth App ${{ needs.version.outputs.upstream }}.
-
-            **Windows:** download the `-setup.exe`.
-            **Linux:** download the `.AppImage` (updates itself), or the `.deb` / `.rpm` for your package manager.
-
-            Installed copies update themselves from this page. The builds aren't code-signed yet, so Windows may show a SmartScreen warning ("More info" → "Run anyway").
+          releaseBody: ${{ needs.version.outputs.notes }}
           releaseDraft: true
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
