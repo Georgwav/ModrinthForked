@@ -53,6 +53,16 @@ export default new createRouter({
 			component: () => import('@/pages/Browse.vue'),
 		},
 		{
+			path: '/host',
+			name: 'Host',
+			component: () => import('@/pages/hosting-local/Servers.vue'),
+		},
+		{
+			path: '/host/:id',
+			name: 'HostServer',
+			component: () => import('@/pages/hosting-local/Server.vue'),
+		},
+		{
 			path: '/curseforge',
 			name: 'CurseForge',
 			component: () => import('@/pages/CurseForge.vue'),

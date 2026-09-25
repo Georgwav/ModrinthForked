@@ -23,6 +23,7 @@ import {
 	PlusIcon,
 	RefreshCwIcon,
 	RightArrowIcon,
+	ServerIcon,
 	ServerStackIcon,
 	SettingsIcon,
 	ShirtIcon,
@@ -2313,6 +2314,13 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				"
 			>
 				<ServerStackIcon />
+			</NavButton>
+			<NavButton
+				v-tooltip.right="'Host'"
+				to="/host"
+				:is-subpage="(r) => r.path.startsWith('/host/')"
+			>
+				<ServerIcon />
 			</NavButton>
 			<suspense>
 				<QuickInstanceSwitcher>
