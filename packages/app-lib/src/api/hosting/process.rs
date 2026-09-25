@@ -2,7 +2,7 @@
 //! CPU and memory they use.
 
 use super::PublicAccess;
-use super::public::{self, PublicAddress};
+use super::public::{self, PublicAddress, Reachability};
 use super::setup::{java_command, platform_args_file, server_java};
 use super::{LaunchTarget, get_server, input, server_dir};
 use crate::util::io::{self, IOError};
@@ -64,6 +64,10 @@ pub struct ServerStatus {
     pub public_address: Option<PublicAddress>,
     /// Why the server couldn't be made public.
     pub public_error: Option<String>,
+    /// Whether the public address works from outside this network.
+    pub reachability: Reachability,
+    /// Where players on the same network join.
+    pub lan_address: Option<String>,
 }
 
 struct Session {
@@ -78,6 +82,8 @@ struct Session {
     system: Option<System>,
     public: Option<PublicAddress>,
     public_error: Option<String>,
+    reachability: Reachability,
+    port: u16,
 }
 
 impl Session {
@@ -94,6 +100,8 @@ impl Session {
             system: None,
             public: None,
             public_error: None,
+            reachability: Reachability::Unchecked,
+            port: 25565,
         }
     }
 
@@ -191,6 +199,8 @@ pub async fn start_server(id: &str) -> crate::Result<()> {
         s.exit_code = None;
         s.public = None;
         s.public_error = None;
+        s.reachability = Reachability::Unchecked;
+        s.port = server.port;
         s.push(ConsoleStream::App, "Starting the server…".to_string());
     }
 
@@ -218,6 +228,10 @@ pub async fn start_server(id: &str) -> crate::Result<()> {
                         });
                     } else {
                         s.public = Some(address);
+                        let session = session.clone();
+                        tokio::spawn(async move {
+                            check_when_running(&session).await;
+                        });
                     }
                 }
                 Err(error) => {
@@ -446,7 +460,59 @@ pub fn server_status(id: &str) -> ServerStatus {
         exit_code: s.exit_code,
         public_address: s.public.clone(),
         public_error: s.public_error.clone(),
+        reachability: s.reachability,
+        lan_address: (s.state != ServerState::Offline)
+            .then(|| public::lan_address(s.port))
+            .flatten(),
     }
+}
+
+/// Checks the public address once the server accepts players.
+async fn check_when_running(session: &Arc<Mutex<Session>>) {
+    // Big modpacks can take minutes to start.
+    for _ in 0..450 {
+        match lock(session).state {
+            ServerState::Running => break,
+            ServerState::Starting => {}
+            ServerState::Stopping | ServerState::Offline => return,
+        }
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+    }
+    check_reachability(session).await;
+}
+
+async fn check_reachability(session: &Arc<Mutex<Session>>) {
+    let address = {
+        let mut s = lock(session);
+        let Some(address) = s.public.as_ref().map(|x| x.address.clone()) else {
+            return;
+        };
+        s.reachability = Reachability::Checking;
+        address
+    };
+    let result = public::check_reachable(&address).await;
+    let mut s = lock(session);
+    s.reachability = match result {
+        Ok(true) => Reachability::Reachable,
+        Ok(false) => {
+            s.push(
+                ConsoleStream::App,
+                format!(
+                    "{address} couldn't be reached from the internet. The router may block it; linking playit.gg gives an address that works."
+                ),
+            );
+            Reachability::Unreachable
+        }
+        Err(error) => {
+            tracing::warn!("Checking {address} failed: {error}");
+            Reachability::Unchecked
+        }
+    };
+}
+
+/// Checks again whether players outside this network can join.
+pub async fn check_server_reachability(id: &str) {
+    check_reachability(&session(id)).await;
 }
 
 fn lock(session: &Mutex<Session>) -> std::sync::MutexGuard<'_, Session> {

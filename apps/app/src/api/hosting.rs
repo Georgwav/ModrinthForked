@@ -22,6 +22,7 @@ pub fn init<R: Runtime>() -> tauri::plugin::TauriPlugin<R> {
             hosting_command,
             hosting_console,
             hosting_status,
+            hosting_check_reachability,
             hosting_properties,
             hosting_set_properties,
             hosting_sync_mods,
@@ -89,6 +90,13 @@ pub async fn hosting_console(
 #[tauri::command]
 pub async fn hosting_status(id: &str) -> Result<ServerStatus> {
     Ok(theseus::hosting::server_status(id))
+}
+
+/// Checks again whether players outside this network can join.
+#[tauri::command]
+pub async fn hosting_check_reachability(id: &str) -> Result<()> {
+    theseus::hosting::check_server_reachability(id).await;
+    Ok(())
 }
 
 #[tauri::command]

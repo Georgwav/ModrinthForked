@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { GlobeIcon, PlayIcon, PlusIcon, ServerIcon, StopCircleIcon, XIcon } from '@modrinth/assets'
 import {
+	Avatar,
 	Button,
 	defineMessages,
 	EmptyState,
@@ -24,6 +25,7 @@ import {
 	start_server,
 	stop_server,
 } from '@/helpers/hosting'
+import { getInstanceIconUrl, list as listInstances } from '@/helpers/instance'
 import { useRootBreadcrumb } from '@/providers/breadcrumbs'
 
 defineOptions({ name: 'LocalServersPage' })
@@ -85,6 +87,7 @@ const breadcrumb = useRootBreadcrumb({
 onActivated(breadcrumb.reset)
 
 const servers = ref<HostedServer[]>([])
+const instanceIcons = ref(new Map<string, string | null>())
 const statuses = ref<Record<string, ServerStatus>>({})
 const playit = ref<PlayitLink>({ linked: false, link_url: null, error: null })
 const hostModal = ref<InstanceType<typeof HostServerModal>>()
@@ -100,6 +103,16 @@ const stateLabels = computed(() => ({
 async function refresh() {
 	try {
 		servers.value = await list_servers()
+		if (
+			servers.value.some(
+				(server) => server.instance_id && !instanceIcons.value.has(server.instance_id),
+			)
+		) {
+			const instances = await listInstances()
+			instanceIcons.value = new Map(
+				instances.map((instance) => [instance.id, getInstanceIconUrl(instance.icon_path)]),
+			)
+		}
 		const entries = await Promise.all(
 			servers.value.map(async (server) => [server.id, await server_status(server.id)] as const),
 		)
@@ -207,7 +220,12 @@ onUnmounted(() => {
 				class="flex cursor-pointer items-center gap-4 rounded-2xl bg-bg-raised p-4 hover:brightness-110"
 				@click="router.push(`/host/${encodeURIComponent(server.id)}`)"
 			>
-				<ServerIcon class="h-8 w-8 shrink-0 text-secondary" />
+				<Avatar
+					:src="server.instance_id ? instanceIcons.get(server.instance_id) : null"
+					:alt="server.name"
+					:tint-by="server.id"
+					size="48px"
+				/>
 				<div class="flex min-w-0 flex-1 flex-col gap-1">
 					<span class="truncate font-semibold text-contrast">{{ server.name }}</span>
 					<span class="text-sm text-secondary">

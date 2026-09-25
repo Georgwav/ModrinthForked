@@ -58,7 +58,11 @@ export type ServerStatus = {
 	exit_code: number | null
 	public_address: PublicAddress | null
 	public_error: string | null
+	reachability: Reachability
+	lan_address: string | null
 }
+
+export type Reachability = 'unchecked' | 'checking' | 'reachable' | 'unreachable'
 
 export type ConsoleLine = {
 	seq: number
@@ -114,6 +118,11 @@ export async function server_console(id: string, after: number | null): Promise<
 
 export async function server_status(id: string): Promise<ServerStatus> {
 	return await invoke('plugin:hosting|hosting_status', { id })
+}
+
+/** Checks again whether players outside this network can join. */
+export async function check_server_reachability(id: string): Promise<void> {
+	return await invoke('plugin:hosting|hosting_check_reachability', { id })
 }
 
 export async function server_properties(id: string): Promise<[string, string][]> {

@@ -2,8 +2,8 @@ import { invoke } from '@tauri-apps/api/core'
 
 /** Commands for the CurseForge tab (CurseForge mods and modpacks, Feed the Beast modpacks). */
 
-export type CurseForgeClass = 'mod' | 'modpack'
-export type CurseForgeSort = 'popularity' | 'updated' | 'downloads' | 'name'
+export type CurseForgeClass = 'mod' | 'modpack' | 'resource_pack' | 'data_pack' | 'shader'
+export type CurseForgeSort = 'popularity' | 'updated' | 'downloads' | 'name' | 'newest' | 'rating'
 export type CurseForgeLoader = 'forge' | 'neoforge' | 'fabric' | 'quilt'
 
 export type CurseForgeSearchQuery = {
@@ -26,9 +26,14 @@ export type CurseForgeProject = {
 	icon_url: string | null
 	website_url: string | null
 	updated: string | null
+	created: string | null
 	allow_distribution: boolean
 	game_versions: string[]
 	loaders: string[]
+	categories: string[]
+	class: CurseForgeClass
+	thumbs_up: number
+	gallery: string[]
 }
 
 export type CurseForgeSearchResults = {
@@ -90,11 +95,15 @@ export type FtbPack = {
 	id: number
 	name: string
 	summary: string
+	/** Markdown. */
+	description: string
 	icon_url: string | null
+	banner_url: string | null
 	authors: string[]
 	installs: number
 	plays: number
 	updated: number
+	released: number
 	tags: string[]
 	website_url: string
 	versions: FtbVersion[]
@@ -116,6 +125,15 @@ export async function curseforge_search(
 	query: CurseForgeSearchQuery,
 ): Promise<CurseForgeSearchResults> {
 	return await invoke('plugin:curseforge|curseforge_search', { query })
+}
+
+export async function curseforge_project(projectId: number): Promise<CurseForgeProject> {
+	return await invoke('plugin:curseforge|curseforge_project', { projectId })
+}
+
+/** A project's description, as HTML from CurseForge. Sanitize before showing it. */
+export async function curseforge_description(projectId: number): Promise<string> {
+	return await invoke('plugin:curseforge|curseforge_description', { projectId })
 }
 
 export async function curseforge_files(
@@ -158,6 +176,10 @@ export async function curseforge_install_modpack(
 
 export async function ftb_search(query: FtbSearchQuery): Promise<FtbPack[]> {
 	return await invoke('plugin:curseforge|ftb_search', { query })
+}
+
+export async function ftb_pack(packId: number): Promise<FtbPack> {
+	return await invoke('plugin:curseforge|ftb_pack', { packId })
 }
 
 /** Starts installing a Feed the Beast pack version as a new instance. */

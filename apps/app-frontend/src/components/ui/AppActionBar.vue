@@ -17,6 +17,7 @@
 			<span class="text-sm text-contrast"> {{ formatMessage(messages.offline) }} </span>
 		</div>
 		<AppUpdateButton />
+		<RunningServersIndicator />
 		<div
 			class="flex border-solid border-surface-5 text-sm font-medium items-center gap-2 py-1.5 px-3 rounded-xl border"
 		>
@@ -147,6 +148,7 @@ import { useRouter } from 'vue-router'
 
 import AppUpdateButton from '@/components/ui/app-update-button/index.vue'
 import DownloadManager from '@/components/ui/download-manager/index.vue'
+import RunningServersIndicator from '@/components/ui/hosting/RunningServersIndicator.vue'
 import { useAppEvent } from '@/composables/use-app-event'
 import { trackEvent } from '@/helpers/analytics'
 import { get_many as getInstances } from '@/helpers/instance'

@@ -345,8 +345,9 @@ function getProjectCardTags(result: Labrinth.Search.v3.ResultSearchProject, disp
 					:icon-url="result.icon_url ?? undefined"
 					:author="{
 						name: result.organization == null ? result.author : result.organization,
-						link:
-							result.organization_id == null
+						link: ctx.getAuthorLink
+							? ctx.getAuthorLink(result)
+							: result.organization_id == null
 								? `/user/${encodeURIComponent(result.author_id ?? result.author)}`
 								: ctx.variant === 'web'
 									? `/organization/${result.organization_id}`

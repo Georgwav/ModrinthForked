@@ -2,8 +2,9 @@
 
 use super::bundle::ManualDownload;
 use super::client::{
-    self, CLASS_MODPACKS, CLASS_MODS, GAME_ID, PagedResponse,
-    RELATION_REQUIRED, mod_loader_name, mod_loader_type,
+    self, CLASS_DATA_PACKS, CLASS_MODPACKS, CLASS_MODS, CLASS_RESOURCE_PACKS,
+    CLASS_SHADERS, GAME_ID, PagedResponse, RELATION_REQUIRED, mod_loader_name,
+    mod_loader_type,
 };
 use crate::State;
 use crate::event::InstancePayloadType;
@@ -20,6 +21,9 @@ const MAX_DEPENDENCY_DEPTH: usize = 3;
 pub enum CurseForgeClass {
     Mod,
     Modpack,
+    ResourcePack,
+    DataPack,
+    Shader,
 }
 
 impl CurseForgeClass {
@@ -27,6 +31,29 @@ impl CurseForgeClass {
         match self {
             Self::Mod => CLASS_MODS,
             Self::Modpack => CLASS_MODPACKS,
+            Self::ResourcePack => CLASS_RESOURCE_PACKS,
+            Self::DataPack => CLASS_DATA_PACKS,
+            Self::Shader => CLASS_SHADERS,
+        }
+    }
+
+    fn from_id(id: Option<u32>) -> Self {
+        match id {
+            Some(CLASS_MODPACKS) => Self::Modpack,
+            Some(CLASS_RESOURCE_PACKS) => Self::ResourcePack,
+            Some(CLASS_DATA_PACKS) => Self::DataPack,
+            Some(CLASS_SHADERS) => Self::Shader,
+            _ => Self::Mod,
+        }
+    }
+
+    /// Where it goes in an instance, for content installed into one.
+    fn project_type(self) -> ProjectType {
+        match self {
+            Self::ResourcePack => ProjectType::ResourcePack,
+            Self::DataPack => ProjectType::DataPack,
+            Self::Shader => ProjectType::ShaderPack,
+            Self::Mod | Self::Modpack => ProjectType::Mod,
         }
     }
 }
@@ -38,6 +65,8 @@ pub enum CurseForgeSort {
     Updated,
     Downloads,
     Name,
+    Newest,
+    Rating,
 }
 
 impl CurseForgeSort {
@@ -48,6 +77,8 @@ impl CurseForgeSort {
             Self::Updated => (3, "desc"),
             Self::Name => (4, "asc"),
             Self::Downloads => (6, "desc"),
+            Self::Newest => (11, "desc"),
+            Self::Rating => (12, "desc"),
         }
     }
 }
@@ -81,10 +112,16 @@ pub struct CurseForgeProject {
     pub icon_url: Option<String>,
     pub website_url: Option<String>,
     pub updated: Option<String>,
+    pub created: Option<String>,
     /// `false` when the author doesn't allow downloads through other apps.
     pub allow_distribution: bool,
     pub game_versions: Vec<String>,
     pub loaders: Vec<String>,
+    pub categories: Vec<String>,
+    pub class: CurseForgeClass,
+    /// Likes on CurseForge.
+    pub thumbs_up: u64,
+    pub gallery: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -166,9 +203,19 @@ pub(crate) fn project_from_api(project: client::Mod) -> CurseForgeProject {
             .filter(|url| !url.is_empty()),
         website_url: project.links.and_then(|links| links.website_url),
         updated: project.date_modified,
+        created: project.date_created,
         allow_distribution: project.allow_mod_distribution != Some(false),
         game_versions,
         loaders,
+        categories: project.categories.into_iter().map(|x| x.name).collect(),
+        class: CurseForgeClass::from_id(project.class_id),
+        thumbs_up: project.thumbs_up_count,
+        gallery: project
+            .screenshots
+            .into_iter()
+            .filter_map(|x| x.url.or(x.thumbnail_url))
+            .filter(|url| !url.is_empty())
+            .collect(),
     }
 }
 
@@ -284,6 +331,26 @@ pub(crate) fn newest_fitting_file(
     fitting.into_iter().next()
 }
 
+/// The newest file for a Minecraft version, for content without a loader
+/// (resource packs, data packs and shaders).
+pub(crate) fn newest_file_for_version(
+    files: Vec<client::File>,
+    game_version: &str,
+) -> Option<client::File> {
+    files
+        .into_iter()
+        .filter(|file| {
+            file.is_server_pack != Some(true)
+                && file.is_available != Some(false)
+                && split_game_versions(&file.game_versions)
+                    .0
+                    .iter()
+                    .any(|x| x == game_version)
+        })
+        // RFC 3339 dates in UTC sort as text.
+        .max_by(|a, b| a.file_date.cmp(&b.file_date))
+}
+
 pub(crate) fn search_path(query: &CurseForgeSearchQuery) -> String {
     let (sort_field, sort_order) = query.sort.field();
     let mut params = vec![
@@ -334,6 +401,12 @@ pub(crate) fn search_results_from_api(
 
 pub async fn get_project(id: u32) -> crate::Result<CurseForgeProject> {
     Ok(project_from_api(client::get_mod(id).await?))
+}
+
+/// A project's description, as HTML from CurseForge (sanitized where it is
+/// shown).
+pub async fn get_description(id: u32) -> crate::Result<String> {
+    client::get_description(id).await
 }
 
 pub(crate) fn files_path(
@@ -396,11 +469,11 @@ pub async fn get_files(
 async fn candidate_files(
     project_id: u32,
     game_version: &str,
-    loader: ModLoader,
+    loader: Option<ModLoader>,
 ) -> crate::Result<Vec<client::File>> {
     let loader_filter = match loader {
-        ModLoader::Quilt | ModLoader::Vanilla => None,
-        loader => Some(loader.as_str()),
+        None | Some(ModLoader::Quilt | ModLoader::Vanilla) => None,
+        Some(loader) => Some(loader.as_str()),
     };
     let response: PagedResponse<client::File> = client::get(&files_path(
         project_id,
@@ -412,9 +485,9 @@ async fn candidate_files(
     Ok(response.data)
 }
 
-/// Installs a mod into an instance: the given file, or else the newest one
-/// for the instance's Minecraft version and loader, with its required
-/// dependencies.
+/// Installs a mod, resource pack, data pack or shader into an instance: the
+/// given file, or else the newest one for the instance's Minecraft version
+/// (and loader, for mods, with their required dependencies).
 pub async fn install_mod(
     instance_id: &str,
     project_id: u32,
@@ -435,7 +508,15 @@ pub async fn install_mod(
     }
     let game_version = metadata.applied_content_set.game_version.clone();
     let loader = metadata.applied_content_set.loader;
-    if loader == ModLoader::Vanilla {
+    let class =
+        CurseForgeClass::from_id(client::get_mod(project_id).await?.class_id);
+    if class == CurseForgeClass::Modpack {
+        return Err(crate::ErrorKind::InputError(
+            "Modpacks are installed as new instances.".to_string(),
+        )
+        .into());
+    }
+    if class == CurseForgeClass::Mod && loader == ModLoader::Vanilla {
         return Err(crate::ErrorKind::InputError(format!(
             "{} has no mod loader. Mods need an instance with Forge, NeoForge, Fabric or Quilt.",
             metadata.instance.name
@@ -473,19 +554,33 @@ pub async fn install_mod(
             Some(file_id) => {
                 client::get_files(&[file_id]).await?.into_iter().next()
             }
-            None => newest_fitting_file(
-                candidate_files(project_id, &game_version, loader).await?,
+            None if class == CurseForgeClass::Mod => newest_fitting_file(
+                candidate_files(project_id, &game_version, Some(loader))
+                    .await?,
                 &game_version,
                 loader,
+            ),
+            None => newest_file_for_version(
+                candidate_files(project_id, &game_version, None).await?,
+                &game_version,
             ),
         };
         let Some(file) = file else {
             if first {
-                return Err(crate::ErrorKind::InputError(format!(
-                    "{} has no version for Minecraft {game_version} with {}.",
-                    project.name,
-                    loader_display_name(loader)
-                ))
+                return Err(crate::ErrorKind::InputError(
+                    if class == CurseForgeClass::Mod {
+                        format!(
+                            "{} has no version for Minecraft {game_version} with {}.",
+                            project.name,
+                            loader_display_name(loader)
+                        )
+                    } else {
+                        format!(
+                            "{} has no version for Minecraft {game_version}.",
+                            project.name
+                        )
+                    },
+                )
                 .into());
             }
             report.missing_dependencies.push(project.name);
@@ -493,7 +588,7 @@ pub async fn install_mod(
         };
         first = false;
 
-        if depth < MAX_DEPENDENCY_DEPTH {
+        if class == CurseForgeClass::Mod && depth < MAX_DEPENDENCY_DEPTH {
             for dependency in &file.dependencies {
                 if dependency.relation_type == RELATION_REQUIRED {
                     queue.push((dependency.mod_id, None, depth + 1));
@@ -517,7 +612,7 @@ pub async fn install_mod(
                     project_id,
                     file.id,
                 ),
-                folder: "mods".to_string(),
+                folder: class.project_type().get_folder().to_string(),
             });
             continue;
         }
@@ -536,7 +631,7 @@ pub async fn install_mod(
             &file_name,
             bytes,
             file.sha1(),
-            Some(ProjectType::Mod),
+            Some(class.project_type()),
             ContentSourceKind::Local,
             None,
             None,

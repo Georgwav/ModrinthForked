@@ -302,23 +302,8 @@
   "app.content.sync-resource-packs-disabled": {
     "message": "Turn on resource pack syncing in app settings first."
   },
-  "app.curseforge.card.by-authors": {
-    "message": "by {authors}"
-  },
-  "app.curseforge.card.open-website": {
-    "message": "Open website"
-  },
-  "app.curseforge.card.versions": {
-    "message": "Versions"
-  },
   "app.curseforge.download-manually": {
     "message": "Download manually"
-  },
-  "app.curseforge.filter.all-loaders": {
-    "message": "All loaders"
-  },
-  "app.curseforge.filter.all-versions": {
-    "message": "All versions"
   },
   "app.curseforge.ftb.no-versions": {
     "message": "This pack has no public versions."
@@ -339,7 +324,7 @@
     "message": "Installs {file} with its required dependencies."
   },
   "app.curseforge.install.installed": {
-    "message": "Mod installed"
+    "message": "Installed"
   },
   "app.curseforge.install.installed-description": {
     "message": "{count, plural, one {# file} other {# files}} added to {instance}."
@@ -357,7 +342,7 @@
     "message": "Install these yourself if the mod needs them: {names}"
   },
   "app.curseforge.install.newest-description": {
-    "message": "Installs the newest version for the instance’s Minecraft version and mod loader, with its required dependencies."
+    "message": "Installs the newest version for the instance’s Minecraft version (and mod loader, with required dependencies, for mods)."
   },
   "app.curseforge.install.title": {
     "message": "Install {name}"
@@ -374,9 +359,6 @@
   "app.curseforge.installing-pack-description": {
     "message": "The new instance is being set up; the downloads panel shows the progress."
   },
-  "app.curseforge.load-more": {
-    "message": "Load more"
-  },
   "app.curseforge.manual.description": {
     "message": "The authors of these files don’t allow downloading them in other apps. Download each one from its page and put it in the named folder of {instance}."
   },
@@ -392,12 +374,6 @@
   "app.curseforge.manual.header": {
     "message": "Download these by hand"
   },
-  "app.curseforge.no-results": {
-    "message": "Nothing found"
-  },
-  "app.curseforge.no-results-description": {
-    "message": "Try other words or fewer filters."
-  },
   "app.curseforge.not-set-up": {
     "message": "CurseForge isn’t set up in this build"
   },
@@ -410,41 +386,59 @@
   "app.curseforge.preparing-pack-description": {
     "message": "Reading the modpack’s file list…"
   },
-  "app.curseforge.search.modpacks": {
-    "message": "Search modpacks…"
+  "app.curseforge.project.by": {
+    "message": "By {authors}"
   },
-  "app.curseforge.search.mods": {
-    "message": "Search CurseForge mods…"
+  "app.curseforge.project.compatibility": {
+    "message": "Compatibility"
   },
-  "app.curseforge.section.modpacks": {
+  "app.curseforge.project.creators": {
+    "message": "Creators"
+  },
+  "app.curseforge.project.description": {
+    "message": "Description"
+  },
+  "app.curseforge.project.downloads": {
+    "message": "{count, plural, one {download} other {downloads}}"
+  },
+  "app.curseforge.project.installs": {
+    "message": "{count, plural, one {install} other {installs}}"
+  },
+  "app.curseforge.project.likes": {
+    "message": "{count, plural, one {like} other {likes}}"
+  },
+  "app.curseforge.project.loaders": {
+    "message": "Platforms"
+  },
+  "app.curseforge.project.minecraft": {
+    "message": "Minecraft"
+  },
+  "app.curseforge.project.open-website": {
+    "message": "Open website"
+  },
+  "app.curseforge.project.updated": {
+    "message": "Updated"
+  },
+  "app.curseforge.project.versions": {
+    "message": "Versions"
+  },
+  "app.curseforge.tab.data-packs": {
+    "message": "Data Packs"
+  },
+  "app.curseforge.tab.ftb": {
+    "message": "FTB Modpacks"
+  },
+  "app.curseforge.tab.modpacks": {
     "message": "Modpacks"
   },
-  "app.curseforge.section.mods": {
+  "app.curseforge.tab.mods": {
     "message": "Mods"
   },
-  "app.curseforge.show-ftb": {
-    "message": "Browse Feed the Beast"
+  "app.curseforge.tab.resource-packs": {
+    "message": "Resource Packs"
   },
-  "app.curseforge.sort.downloads": {
-    "message": "Most downloads"
-  },
-  "app.curseforge.sort.popularity": {
-    "message": "Popular"
-  },
-  "app.curseforge.sort.updated": {
-    "message": "Recently updated"
-  },
-  "app.curseforge.source.curseforge": {
-    "message": "CurseForge"
-  },
-  "app.curseforge.source.ftb": {
-    "message": "Feed the Beast"
-  },
-  "app.curseforge.stat.downloads": {
-    "message": "{count} downloads"
-  },
-  "app.curseforge.stat.installs": {
-    "message": "{count} installs"
+  "app.curseforge.tab.shaders": {
+    "message": "Shaders"
   },
   "app.curseforge.versions.download-manually": {
     "message": "Download manually"
@@ -653,6 +647,15 @@
   "app.hosting.address": {
     "message": "Address"
   },
+  "app.hosting.address.internet": {
+    "message": "Internet"
+  },
+  "app.hosting.address.same-network": {
+    "message": "Same network"
+  },
+  "app.hosting.address.this-computer": {
+    "message": "This computer"
+  },
   "app.hosting.command-placeholder": {
     "message": "Type a command, like say Hello or op YourName"
   },
@@ -734,17 +737,50 @@
   "app.hosting.eula-needed": {
     "message": "Accept the Minecraft EULA in Settings to start the server."
   },
+  "app.hosting.forwarding.check-again": {
+    "message": "Check again"
+  },
+  "app.hosting.forwarding.checking": {
+    "message": "Checking from the internet…"
+  },
+  "app.hosting.forwarding.failed": {
+    "message": "Port forwarding failed"
+  },
+  "app.hosting.forwarding.off": {
+    "message": "Port forwarding off"
+  },
+  "app.hosting.forwarding.off-hint": {
+    "message": "Only players on your network can join. Turn on public access in Settings to let friends join over the internet."
+  },
+  "app.hosting.forwarding.playit": {
+    "message": "playit.gg tunnel"
+  },
+  "app.hosting.forwarding.reachable": {
+    "message": "Works from the internet"
+  },
+  "app.hosting.forwarding.unreachable": {
+    "message": "Not reachable from the internet"
+  },
+  "app.hosting.forwarding.unreachable-hint": {
+    "message": "Your router or internet provider blocks the port. Link playit.gg on the Host page for an address that always works."
+  },
+  "app.hosting.forwarding.upnp": {
+    "message": "Port forwarded"
+  },
   "app.hosting.heading": {
     "message": "Host"
   },
   "app.hosting.host-instance": {
     "message": "Host an instance"
   },
+  "app.hosting.indicator.servers": {
+    "message": "{count} servers running"
+  },
+  "app.hosting.indicator.view": {
+    "message": "View server"
+  },
   "app.hosting.kill": {
     "message": "Force stop"
-  },
-  "app.hosting.lan-address": {
-    "message": "On this computer: localhost{port}"
   },
   "app.hosting.memory": {
     "message": "Memory"
