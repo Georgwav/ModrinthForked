@@ -1,0 +1,56 @@
+{
+  "data": [
+    {
+      "id": 238222,
+      "gameId": 432,
+      "name": "Just Enough Items (JEI)",
+      "slug": "jei",
+      "links": {
+        "websiteUrl": "https://www.curseforge.com/minecraft/mc-mods/jei"
+      },
+      "summary": "View Items and Recipes",
+      "status": 4,
+      "downloadCount": 372145884,
+      "classId": 6,
+      "authors": [{ "id": 1, "name": "mezz", "url": "" }],
+      "logo": null,
+      "mainFileId": 5846804,
+      "latestFilesIndexes": [],
+      "allowModDistribution": true
+    },
+    {
+      "id": 1000,
+      "gameId": 432,
+      "name": "Faithful 32x",
+      "slug": "faithful-32x",
+      "links": {
+        "websiteUrl": "https://www.curseforge.com/minecraft/texture-packs/faithful-32x"
+      },
+      "summary": "",
+      "status": 4,
+      "downloadCount": 10,
+      "classId": 12,
+      "authors": [],
+      "mainFileId": 7000,
+      "latestFilesIndexes": [],
+      "allowModDistribution": null
+    },
+    {
+      "id": 2000,
+      "gameId": 432,
+      "name": "Complementary Shaders",
+      "slug": "complementary-shaders",
+      "links": {
+        "websiteUrl": "https://www.curseforge.com/minecraft/shaders/complementary-shaders"
+      },
+      "summary": "",
+      "status": 4,
+      "downloadCount": 10,
+      "classId": 6552,
+      "authors": [],
+      "mainFileId": 8000,
+      "latestFilesIndexes": [],
+      "allowModDistribution": false
+    }
+  ]
+}

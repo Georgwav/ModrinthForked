@@ -1,0 +1,170 @@
+{
+  "creeperhostVersionId": 524542,
+  "status": "success",
+  "installs": 15649,
+  "plays": 87935,
+  "refreshed": 1790353804,
+  "changelog": "https://api.modpacks.ch/public/modpack/103/12254/changelog",
+  "parent": 103,
+  "notification": "",
+  "links": [],
+  "targets": [
+    {
+      "version": "43.4.2",
+      "id": 10130,
+      "name": "forge",
+      "type": "modloader",
+      "updated": 0
+    },
+    {
+      "version": "1.19.2",
+      "id": 749,
+      "name": "minecraft",
+      "type": "game",
+      "updated": 0
+    },
+    {
+      "version": "17.0.7+7",
+      "id": 4738,
+      "name": "java",
+      "type": "runtime",
+      "updated": 1683215664
+    }
+  ],
+  "specs": {
+    "id": 879,
+    "minimum": 4096,
+    "recommended": 6144
+  },
+  "files": [
+    {
+      "version": "unknown",
+      "path": "./mods",
+      "url": "https://edge.forgecdn.net/files/4655/495/AE2WTLib-12.9.7.jar",
+      "mirrors": [],
+      "sha1": "8030049d3a7d71b9e9be56e64e04c92d6f37d6fb",
+      "size": 194174,
+      "tags": [],
+      "clientonly": false,
+      "serveronly": false,
+      "optional": false,
+      "curseforge": {
+        "project": "459929",
+        "file": "4655495"
+      },
+      "id": 326463,
+      "name": "AE2WTLib-12.9.7.jar",
+      "type": "mod",
+      "updated": 1690138748
+    },
+    {
+      "version": "unknown",
+      "path": "./mods",
+      "url": "",
+      "mirrors": [],
+      "sha1": "a8e80c74a53ef7526897c62c681cc354b41a7ed3",
+      "size": 22772,
+      "tags": [],
+      "clientonly": false,
+      "serveronly": false,
+      "optional": false,
+      "curseforge": {
+        "project": "559313",
+        "file": "3940200"
+      },
+      "id": 312406,
+      "name": "blocked-mod-1.0.jar",
+      "type": "mod",
+      "updated": 1670412792
+    },
+    {
+      "version": "0",
+      "path": "./config/Advancedperipherals",
+      "url": "https://dist.modpacks.ch/modpacks/0/FTB%20Ultimate:%20Anniversary%20Edition-1.3.0/config/Advancedperipherals/67983b16075d8208d8846b92050eb2b4baefd56f",
+      "mirrors": [],
+      "sha1": "67983b16075d8208d8846b92050eb2b4baefd56f",
+      "size": 983,
+      "tags": [],
+      "clientonly": false,
+      "serveronly": false,
+      "optional": false,
+      "id": 298171,
+      "name": "metaphysics.toml",
+      "type": "config",
+      "updated": 1644485531
+    },
+    {
+      "version": "2",
+      "path": "",
+      "url": "https://dist.modpacks.ch/modpacks/2/FTB%20Skies%20Expert-1.0.0/1ba3bb74041a3d7a7c178f2b015cb160a7528898",
+      "mirrors": [],
+      "sha1": "1ba3bb74041a3d7a7c178f2b015cb160a7528898",
+      "size": 202,
+      "tags": [],
+      "clientonly": false,
+      "serveronly": false,
+      "optional": false,
+      "id": 341264,
+      "name": "default-server.properties",
+      "type": "resource",
+      "updated": 1708092240
+    },
+    {
+      "version": "unknown",
+      "path": "./mods",
+      "url": "https://edge.forgecdn.net/files/5477/207/Ding-1.19.2-Forge-1.5.0.jar",
+      "mirrors": [],
+      "sha1": "d73396372c60ba44919736bda6debc591fac163b",
+      "size": 36832,
+      "tags": [],
+      "clientonly": true,
+      "serveronly": false,
+      "optional": false,
+      "curseforge": {
+        "project": "231275",
+        "file": "5477207"
+      },
+      "id": 357760,
+      "name": "Ding-1.19.2-Forge-1.5.0.jar",
+      "type": "mod",
+      "updated": 1720742763
+    },
+    {
+      "version": "0",
+      "path": "./",
+      "url": "https://dist.modpacks.ch/modpacks/0/FTB%20Ultimate:%20Anniversary%20Edition-1.3.0/config/Advancedperipherals/67983b16075d8208d8846b92050eb2b4baefd56f",
+      "mirrors": [],
+      "sha1": "67983b16075d8208d8846b92050eb2b4baefd56f",
+      "size": 983,
+      "tags": [],
+      "clientonly": false,
+      "serveronly": true,
+      "optional": false,
+      "id": 298171,
+      "name": "server.properties",
+      "type": "config",
+      "updated": 1644485531
+    },
+    {
+      "version": "0",
+      "path": "../../escape",
+      "url": "https://dist.modpacks.ch/modpacks/0/FTB%20Ultimate:%20Anniversary%20Edition-1.3.0/config/Advancedperipherals/67983b16075d8208d8846b92050eb2b4baefd56f",
+      "mirrors": [],
+      "sha1": "67983b16075d8208d8846b92050eb2b4baefd56f",
+      "size": 983,
+      "tags": [],
+      "clientonly": false,
+      "serveronly": false,
+      "optional": false,
+      "id": 298171,
+      "name": "evil.txt",
+      "type": "config",
+      "updated": 1644485531
+    }
+  ],
+  "private": false,
+  "id": 12254,
+  "name": "1.6.0",
+  "type": "release",
+  "updated": 1720744117
+}

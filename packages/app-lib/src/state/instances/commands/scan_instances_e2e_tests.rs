@@ -707,6 +707,9 @@ async fn folder_instances_work_with_launcher_features() {
         "moved in"
     );
     println!("copy and move worlds: ok");
+
+    // --- CurseForge tab: a Feed the Beast modpack as a new instance -------
+    crate::api::curseforge::e2e_tests::install_ftb_pack().await;
 }
 
 fn copy_dir(from: &Path, to: &Path) {
