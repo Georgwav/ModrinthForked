@@ -2,6 +2,15 @@
 
 Each release's GitHub description is taken from its section here (see `scripts/release-notes.py`).
 
+## 0.21.7
+
+- Host any instance as a server: click Host as server in its menu. The Minecraft version, mod loader and server-side mods are set up for you (client-only mods are left out), with a new or copied world.
+- The Host page shows each server's console (type commands), players, CPU and memory, and has settings for the port, memory, game mode, difficulty, whitelist and more.
+- Friends can join over the internet: automatic port forwarding on your router, or a free playit.gg address, linked by confirming in your browser.
+- A CurseForge tab below Discover: install CurseForge mods into an instance and CurseForge or Feed the Beast modpacks as new instances.
+- Instance icons in the copy and move world picker.
+- Modpack instances without an icon get the modpack's icon.
+
 ## 0.21.6
 
 - Move a world to another instance straight from its menu.
