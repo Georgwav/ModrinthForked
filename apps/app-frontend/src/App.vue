@@ -14,6 +14,7 @@ import {
 	ChevronLeftIcon,
 	ChevronRightIcon,
 	CompassIcon,
+	CurseForgeIcon,
 	ImageIcon,
 	LogInIcon,
 	LogOutIcon,
@@ -2283,6 +2284,9 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				"
 			>
 				<CompassIcon />
+			</NavButton>
+			<NavButton v-tooltip.right="'CurseForge'" to="/curseforge">
+				<CurseForgeIcon />
 			</NavButton>
 			<NavButton
 				v-if="appSettings.showSkinSelectorInSidebar"

@@ -302,6 +302,165 @@
   "app.content.sync-resource-packs-disabled": {
     "message": "Turn on resource pack syncing in app settings first."
   },
+  "app.curseforge.card.by-authors": {
+    "message": "by {authors}"
+  },
+  "app.curseforge.card.open-website": {
+    "message": "Open website"
+  },
+  "app.curseforge.card.versions": {
+    "message": "Versions"
+  },
+  "app.curseforge.download-manually": {
+    "message": "Download manually"
+  },
+  "app.curseforge.filter.all-loaders": {
+    "message": "All loaders"
+  },
+  "app.curseforge.filter.all-versions": {
+    "message": "All versions"
+  },
+  "app.curseforge.ftb.no-versions": {
+    "message": "This pack has no public versions."
+  },
+  "app.curseforge.ftb.version-info": {
+    "message": "Minecraft {game} · {loader}"
+  },
+  "app.curseforge.heading": {
+    "message": "CurseForge"
+  },
+  "app.curseforge.install": {
+    "message": "Install"
+  },
+  "app.curseforge.install.button": {
+    "message": "Install"
+  },
+  "app.curseforge.install.file-description": {
+    "message": "Installs {file} with its required dependencies."
+  },
+  "app.curseforge.install.installed": {
+    "message": "Mod installed"
+  },
+  "app.curseforge.install.installed-description": {
+    "message": "{count, plural, one {# file} other {# files}} added to {instance}."
+  },
+  "app.curseforge.install.instance": {
+    "message": "Instance"
+  },
+  "app.curseforge.install.instance-placeholder": {
+    "message": "Choose an instance"
+  },
+  "app.curseforge.install.missing-dependencies": {
+    "message": "Some dependencies have no version for this instance"
+  },
+  "app.curseforge.install.missing-dependencies-description": {
+    "message": "Install these yourself if the mod needs them: {names}"
+  },
+  "app.curseforge.install.newest-description": {
+    "message": "Installs the newest version for the instance’s Minecraft version and mod loader, with its required dependencies."
+  },
+  "app.curseforge.install.title": {
+    "message": "Install {name}"
+  },
+  "app.curseforge.install.vanilla-body": {
+    "message": "{instance} has no mod loader. Mods need an instance with Forge, NeoForge, Fabric or Quilt."
+  },
+  "app.curseforge.install.vanilla-header": {
+    "message": "No mod loader"
+  },
+  "app.curseforge.installing-pack": {
+    "message": "Installing {name}"
+  },
+  "app.curseforge.installing-pack-description": {
+    "message": "The new instance is being set up; the downloads panel shows the progress."
+  },
+  "app.curseforge.load-more": {
+    "message": "Load more"
+  },
+  "app.curseforge.manual.description": {
+    "message": "The authors of these files don’t allow downloading them in other apps. Download each one from its page and put it in the named folder of {instance}."
+  },
+  "app.curseforge.manual.done": {
+    "message": "Done"
+  },
+  "app.curseforge.manual.download": {
+    "message": "Download manually"
+  },
+  "app.curseforge.manual.folder": {
+    "message": "into {folder}"
+  },
+  "app.curseforge.manual.header": {
+    "message": "Download these by hand"
+  },
+  "app.curseforge.no-results": {
+    "message": "Nothing found"
+  },
+  "app.curseforge.no-results-description": {
+    "message": "Try other words or fewer filters."
+  },
+  "app.curseforge.not-set-up": {
+    "message": "CurseForge isn’t set up in this build"
+  },
+  "app.curseforge.not-set-up-description": {
+    "message": "This build of Threadrinth was made without a CurseForge API key, so CurseForge can’t be searched. Feed the Beast modpacks still work."
+  },
+  "app.curseforge.preparing-pack": {
+    "message": "Preparing {name}"
+  },
+  "app.curseforge.preparing-pack-description": {
+    "message": "Reading the modpack’s file list…"
+  },
+  "app.curseforge.search.modpacks": {
+    "message": "Search modpacks…"
+  },
+  "app.curseforge.search.mods": {
+    "message": "Search CurseForge mods…"
+  },
+  "app.curseforge.section.modpacks": {
+    "message": "Modpacks"
+  },
+  "app.curseforge.section.mods": {
+    "message": "Mods"
+  },
+  "app.curseforge.show-ftb": {
+    "message": "Browse Feed the Beast"
+  },
+  "app.curseforge.sort.downloads": {
+    "message": "Most downloads"
+  },
+  "app.curseforge.sort.popularity": {
+    "message": "Popular"
+  },
+  "app.curseforge.sort.updated": {
+    "message": "Recently updated"
+  },
+  "app.curseforge.source.curseforge": {
+    "message": "CurseForge"
+  },
+  "app.curseforge.source.ftb": {
+    "message": "Feed the Beast"
+  },
+  "app.curseforge.stat.downloads": {
+    "message": "{count} downloads"
+  },
+  "app.curseforge.stat.installs": {
+    "message": "{count} installs"
+  },
+  "app.curseforge.versions.download-manually": {
+    "message": "Download manually"
+  },
+  "app.curseforge.versions.install": {
+    "message": "Install"
+  },
+  "app.curseforge.versions.load-more": {
+    "message": "Load more"
+  },
+  "app.curseforge.versions.loading": {
+    "message": "Loading versions…"
+  },
+  "app.curseforge.versions.none": {
+    "message": "No versions match the selected Minecraft version and loader."
+  },
   "app.download-manager.active": {
     "message": "Active"
   },
