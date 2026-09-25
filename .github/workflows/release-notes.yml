@@ -1,0 +1,33 @@
+name: Release notes
+
+# Rewrites the description of every published release from CHANGELOG.md, for
+# after a changelog entry was added or fixed. New releases get theirs from the
+# Release workflow.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  notes:
+    name: Update release descriptions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update release descriptions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --exclude-drafts --json tagName --jq '.[].tagName' |
+            while read -r tag; do
+              # The Modrinth version the release was built from.
+              upstream=$(git show "$tag:scripts/upstream-version.txt" 2>/dev/null || cat scripts/upstream-version.txt)
+              python3 scripts/release-notes.py "$tag" "$upstream" > notes.md
+              gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
+              echo "Updated $tag"
+            done
