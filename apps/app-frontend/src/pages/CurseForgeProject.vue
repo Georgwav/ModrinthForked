@@ -204,7 +204,6 @@ async function load() {
 }
 watch([tabType, projectId], () => void load(), { immediate: true })
 
-
 async function startPackInstall(name: string, start: () => Promise<PackInstallReport>) {
 	installing.value = true
 	addNotification({
