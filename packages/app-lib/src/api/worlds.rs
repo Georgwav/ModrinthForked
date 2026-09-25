@@ -1103,3 +1103,45 @@ async fn _get_server_status_new(
         ping: Some(latency),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quartz_nbt::compound;
+
+    fn write_level_dat(world: &Path, name: &str) {
+        std::fs::create_dir_all(world).unwrap();
+        let root = compound! { "Data": compound! { "LevelName": name } };
+        let mut bytes = Vec::new();
+        quartz_nbt::io::write_nbt(
+            &mut bytes,
+            None,
+            &root,
+            quartz_nbt::io::Flavor::GzCompressed,
+        )
+        .unwrap();
+        std::fs::write(world.join("level.dat"), bytes).unwrap();
+    }
+
+    #[tokio::test]
+    async fn lists_worlds_whose_session_lock_cannot_be_opened() {
+        let instance = tempfile::tempdir().unwrap();
+        let saves = instance.path().join("saves");
+        write_level_dat(&saves.join("Normal"), "Normal world");
+        write_level_dat(&saves.join("Stuck"), "Stuck world");
+        // A session.lock that can't be opened for writing, like on a
+        // read-only drive.
+        std::fs::create_dir(saves.join("Stuck").join("session.lock")).unwrap();
+
+        let mut worlds = Vec::new();
+        get_singleplayer_worlds_in_instance(instance.path(), &mut worlds)
+            .await
+            .unwrap();
+        let mut names = worlds
+            .iter()
+            .map(|world| world.name.as_str())
+            .collect::<Vec<_>>();
+        names.sort_unstable();
+        assert_eq!(names, ["Normal world", "Stuck world"]);
+    }
+}

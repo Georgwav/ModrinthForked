@@ -19,6 +19,9 @@ use std::time::Duration;
 const OLD_SODIUM_URL: &str = "https://cdn.modrinth.com/data/AANobbMI/versions/vgceLbdH/sodium-fabric-mc1.20-0.4.10%2Bbuild.27.jar";
 const OLD_SODIUM_FILE: &str = "sodium-fabric-mc1.20-0.4.10+build.27.jar";
 const SODIUM_PROJECT_ID: &str = "AANobbMI";
+/// Iris 1.6.4, which requires the old Sodium above; its updates require newer
+/// ones.
+const OLD_IRIS_VERSION: &str = "URWeWMAt";
 const OPTIONS_TXT: &str = "version:3465\nfov:0.25\nrenderDistance:7\n";
 
 fn write(path: &Path, contents: impl AsRef<[u8]>) {
@@ -503,9 +506,207 @@ async fn folder_instances_work_with_launcher_features() {
         tokio::time::sleep(Duration::from_millis(100)).await;
     }
     let job = job.expect("install queued for the import");
+    let job_id = job.job_id.clone();
     let _ =
         crate::install::runner::cancel_job(job.job_id.parse().unwrap()).await;
     println!("install queued without repair: ok");
+
+    // --- Install jobs stored as binary JSON ------------------------------
+    // Older builds stored them that way after moving the app folder, which
+    // broke every job list ("invalid utf-8 sequence"); the repair migration
+    // makes them readable again.
+    let state = State::get().await.unwrap();
+    sqlx::query("UPDATE install_jobs SET state = jsonb(state)")
+        .execute(&state.pool)
+        .await
+        .unwrap();
+    let error = crate::install::runner::list_jobs(true).await.unwrap_err();
+    assert!(error.to_string().contains("utf-8"), "{error}");
+    sqlx::raw_sql(include_str!(
+        "../../../../migrations/20260925120000_threadrinth-install-jobs-text-state.sql"
+    ))
+    .execute(&state.pool)
+    .await
+    .unwrap();
+    assert!(
+        crate::install::runner::list_jobs(true)
+            .await
+            .unwrap()
+            .iter()
+            .any(|job| job.job_id == job_id)
+    );
+    println!("binary install job states repaired: ok");
+
+    // --- Update all -----------------------------------------------------
+    // Sodium dropped into the folder has no content entry; Iris, installed
+    // through the app, requires it. Updating both used to also plan Sodium as
+    // a new dependency, and the two downloads collided ("The updated filename
+    // belongs to another content item").
+    super::scan_instances::QUEUE_INSTALLS
+        .store(false, std::sync::atomic::Ordering::Relaxed);
+    let shaders = profiles.join("Shaders");
+    write(
+        &shaders.join("instance.cfg"),
+        "[General]\nModrinthGameVersion=1.20.1\nModrinthLoader=fabric\n",
+    );
+    write(
+        &shaders.join("mods").join(OLD_SODIUM_FILE),
+        &download(OLD_SODIUM_URL).await,
+    );
+    api::refresh().await.unwrap();
+    let shaders_id = instance_by_path("Shaders")
+        .await
+        .expect("imported")
+        .instance
+        .id;
+    api::sync_content_files(&shaders_id).await.unwrap();
+    // Downloads report progress through loading bars.
+    #[cfg(not(feature = "tauri"))]
+    crate::EventState::init().await.unwrap();
+    // Iris installed through the app, so it has a content entry.
+    api::add_project_from_version(
+        &shaders_id,
+        OLD_IRIS_VERSION,
+        crate::util::fetch::DownloadReason::Standalone,
+        None,
+    )
+    .await
+    .unwrap();
+    api::refresh_content_updates(&shaders_id).await.unwrap();
+    let updated = api::update_all_projects(&shaders_id).await.unwrap();
+    assert_eq!(updated.len(), 2, "both mods updated: {updated:?}");
+    let jars = std::fs::read_dir(shaders.join("mods"))
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        jars.iter().filter(|jar| jar.contains("sodium")).count(),
+        1,
+        "one Sodium jar: {jars:?}"
+    );
+    assert!(!jars.iter().any(|jar| jar == OLD_SODIUM_FILE), "{jars:?}");
+    println!("update all with a required dependency: ok ({jars:?})");
+
+    // --- Server pack ----------------------------------------------------
+    // The instance has no saved Fabric version (it used to fail with
+    // "Loader version mismatch"); Iris and Sodium are client-only, so they
+    // start unchecked, and configs are in.
+    write(&shaders.join("config/server.toml"), "motd = 1\n");
+    assert!(
+        api::get(&shaders_id)
+            .await
+            .unwrap()
+            .unwrap()
+            .applied_content_set
+            .loader_version
+            .is_none()
+    );
+    let selection = api::server_pack_selection(&shaders_id).await.unwrap();
+    assert!(selection.included.contains(&"mods".to_string()));
+    assert!(selection.included.contains(&"config".to_string()));
+    assert_eq!(selection.excluded.len(), 2, "{:?}", selection.excluded);
+    let export_dir = tempfile::tempdir().unwrap();
+    let zip_path = export_dir.path().join("server.zip");
+    let report = api::export_server_pack(
+        &shaders_id,
+        zip_path.clone(),
+        selection.included,
+        selection.excluded,
+    )
+    .await
+    .unwrap();
+    assert_eq!(report.mods_included, 0);
+    let mut zip =
+        zip::ZipArchive::new(std::fs::File::open(&zip_path).unwrap()).unwrap();
+    let names = (0..zip.len())
+        .map(|index| zip.by_index(index).unwrap().name().to_string())
+        .collect::<Vec<_>>();
+    for expected in [
+        "config/server.toml",
+        "fabric-server-launch.jar",
+        "start.sh",
+        "start.bat",
+        "README.txt",
+    ] {
+        assert!(names.iter().any(|name| name == expected), "{names:?}");
+    }
+    assert!(
+        !names.iter().any(|name| name.starts_with("mods/")),
+        "{names:?}"
+    );
+    assert!(
+        zip.by_name("fabric-server-launch.jar").unwrap().size() > 10_000,
+        "a real launcher jar"
+    );
+    println!("server pack: ok ({} files)", names.len());
+
+    // --- Copy and move worlds between instances ----------------------------
+    use crate::api::world_transfer::{WorldTransferMode, transfer_world};
+    let world_only_id = world.instance.id.clone();
+    let singleplayer = |worlds: Vec<crate::api::worlds::World>| {
+        worlds
+            .into_iter()
+            .filter(|world| {
+                matches!(
+                    world.details,
+                    crate::api::worlds::WorldDetails::Singleplayer { .. }
+                )
+            })
+            .count()
+    };
+    let copied = transfer_world(
+        &world_only_id,
+        "World",
+        &shaders_id,
+        WorldTransferMode::Copy,
+    )
+    .await
+    .unwrap();
+    assert_eq!(copied, "World");
+    let again = transfer_world(
+        &world_only_id,
+        "World",
+        &shaders_id,
+        WorldTransferMode::Copy,
+    )
+    .await
+    .unwrap();
+    assert_eq!(again, "World (2)", "a copy never overwrites");
+    let moved = transfer_world(
+        &world_only_id,
+        "World",
+        &prism_id,
+        WorldTransferMode::Move,
+    )
+    .await
+    .unwrap();
+    assert_eq!(moved, "World");
+    assert_eq!(
+        singleplayer(
+            crate::api::worlds::get_instance_worlds(&shaders_id)
+                .await
+                .unwrap()
+        ),
+        2
+    );
+    assert_eq!(
+        singleplayer(
+            crate::api::worlds::get_instance_worlds(&world_only_id)
+                .await
+                .unwrap()
+        ),
+        0,
+        "moved away"
+    );
+    assert!(
+        singleplayer(
+            crate::api::worlds::get_instance_worlds(&prism_id)
+                .await
+                .unwrap()
+        ) >= 1,
+        "moved in"
+    );
+    println!("copy and move worlds: ok");
 }
 
 fn copy_dir(from: &Path, to: &Path) {
