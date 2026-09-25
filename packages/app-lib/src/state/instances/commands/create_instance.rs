@@ -122,8 +122,12 @@ pub(crate) async fn create_instance(
         )
         .await?;
         tx.commit().await?;
-        super::scan_instances::sync_instance_cfg(&instance.id, &state.pool)
-            .await;
+        super::scan_instances::sync_instance_cfg(
+            &instance.id,
+            &state.pool,
+            true,
+        )
+        .await;
 
         crate::state::instances::watcher::watch_instance_folder(
             &instance.id,

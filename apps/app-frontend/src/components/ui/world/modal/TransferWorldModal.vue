@@ -32,6 +32,7 @@ const emit = defineEmits<{
 
 const messages = defineMessages({
 	title: { id: 'app.instance.worlds.transfer.title', defaultMessage: 'Copy to instance' },
+	moveTitle: { id: 'app.instance.worlds.transfer.move-title', defaultMessage: 'Move to instance' },
 	targetLabel: { id: 'app.instance.worlds.transfer.target', defaultMessage: 'Instance' },
 	targetPlaceholder: {
 		id: 'app.instance.worlds.transfer.target-placeholder',
@@ -83,10 +84,10 @@ const versionDiffers = computed(
 	() => !!target.value && target.value.game_version !== props.instance.game_version,
 )
 
-async function show(selected: SingleplayerWorld) {
+async function show(selected: SingleplayerWorld, mode: 'copy' | 'move' = 'copy') {
 	world.value = selected
 	targetId.value = undefined
-	move.value = false
+	move.value = mode === 'move'
 	modal.value?.show()
 	instances.value = await list().catch((error) => {
 		handleError(error)
@@ -127,7 +128,11 @@ defineExpose({ show, hide })
 </script>
 
 <template>
-	<NewModal ref="modal" :header="formatMessage(messages.title)" max-width="520px">
+	<NewModal
+		ref="modal"
+		:header="formatMessage(move ? messages.moveTitle : messages.title)"
+		max-width="520px"
+	>
 		<div class="flex flex-col gap-4">
 			<p v-if="world" class="m-0 font-semibold text-contrast">
 				{{ getWorldDisplayName(world) }}

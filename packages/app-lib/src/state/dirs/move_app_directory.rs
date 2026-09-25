@@ -318,13 +318,12 @@ async fn rewrite_database_paths(
         let mut state: Value = serde_json::from_str(&job.state)?;
         rewrite_value(&mut state, mappings);
         let state = serde_json::to_string(&state)?;
-        sqlx::query!(
-            "UPDATE install_jobs SET state = jsonb(?) WHERE id = ?",
-            state,
-            job.id
-        )
-        .execute(&mut *tx)
-        .await?;
+        // Stored as text: install_jobs readers decode `state` as a string.
+        sqlx::query("UPDATE install_jobs SET state = ? WHERE id = ?")
+            .bind(state)
+            .bind(job.id)
+            .execute(&mut *tx)
+            .await?;
     }
     content_store::set_setting(
         &mut *tx,
@@ -592,4 +591,54 @@ pub(crate) async fn remove_migrated_tree(root: &Path) -> crate::Result<()> {
     }
     fs::remove_dir_all(root).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn job_state(pool: &SqlitePool) -> (String, String) {
+        sqlx::query_as("SELECT typeof(state), state FROM install_jobs")
+            .fetch_one(pool)
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn install_job_states_stay_readable_text() {
+        let dir = tempfile::tempdir().unwrap();
+        let pool = crate::state::db::connect_at(&dir.path().join("app.db"))
+            .await
+            .unwrap();
+        sqlx::query(
+            "INSERT INTO install_jobs (id, kind, status, state, created, modified)
+             VALUES ('job', 'install', 'finished', jsonb(?), 0, 0)",
+        )
+        .bind(r#"{"path":"/old/profiles/pack"}"#)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        // The repair migration turns binary JSON (written by older builds)
+        // back into text.
+        sqlx::raw_sql(include_str!(
+            "../../../migrations/20260925120000_threadrinth-install-jobs-text-state.sql"
+        ))
+        .execute(&pool)
+        .await
+        .unwrap();
+        assert_eq!(job_state(&pool).await.0, "text");
+
+        // Moving the app folder rewrites paths and keeps the state as text.
+        rewrite_database_paths(
+            &pool,
+            &[(PathBuf::from("/old"), PathBuf::from("/new"))],
+            "checkpoint",
+        )
+        .await
+        .unwrap();
+        let (kind, state) = job_state(&pool).await;
+        assert_eq!(kind, "text");
+        assert!(state.contains("/new/profiles/pack"), "{state}");
+    }
 }

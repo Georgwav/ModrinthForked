@@ -2,6 +2,16 @@
 
 Each release's GitHub description is taken from its section here (see `scripts/release-notes.py`).
 
+## 0.21.6
+
+- Move a world to another instance straight from its menu.
+- Worlds show up again on drives where their lock file can't be opened.
+- Server pack export lets you pick the files, like the modpack export, and works for instances without a saved mod loader version.
+- Modpack instances keep their icons, also across Windows and Linux.
+- Fixed "invalid utf-8 sequence" database errors after moving the app folder.
+- Fixed "Update all" failing with "The updated filename belongs to another content item".
+- No more "CancelledError" popups.
+
 ## 0.21.5
 
 - Copy or move worlds between instances from the Worlds tab.

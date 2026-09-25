@@ -25,14 +25,30 @@ export async function transfer_world(
 
 export type ServerPackReport = {
 	mods_included: number
-	client_only_mods: string[]
-	unknown_mods: string[]
 }
 
-/** Exports an instance as a ready-to-run server zip. */
+/** Include and exclude rules for the files the server pack export starts with. */
+export type ServerPackSelection = {
+	included: string[]
+	excluded: string[]
+}
+
+/** The files a server needs: mods (minus client-only ones) and their configs. */
+export async function server_pack_selection(instanceId: string): Promise<ServerPackSelection> {
+	return await invoke('plugin:threadrinth|server_pack_selection', { instanceId })
+}
+
+/** Exports the selected files of an instance as a ready-to-run server zip. */
 export async function export_server_pack(
 	instanceId: string,
 	exportLocation: string,
+	included: string[],
+	excluded: string[],
 ): Promise<ServerPackReport> {
-	return await invoke('plugin:threadrinth|export_server_pack', { instanceId, exportLocation })
+	return await invoke('plugin:threadrinth|export_server_pack', {
+		instanceId,
+		exportLocation,
+		included,
+		excluded,
+	})
 }

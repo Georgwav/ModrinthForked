@@ -86,12 +86,15 @@ struct ExportSelectionNode {
 }
 
 #[derive(Default)]
-struct ExportSelection {
+pub(super) struct ExportSelection {
     root: ExportSelectionNode,
 }
 
 impl ExportSelection {
-    fn new(included_paths: Vec<String>, excluded_paths: Vec<String>) -> Self {
+    pub(super) fn new(
+        included_paths: Vec<String>,
+        excluded_paths: Vec<String>,
+    ) -> Self {
         let mut rules = HashMap::new();
 
         for (paths, selected) in
@@ -116,11 +119,14 @@ impl ExportSelection {
         selection
     }
 
-    fn is_included(&self, path: &SafeRelativeUtf8UnixPathBuf) -> bool {
+    pub(super) fn is_included(
+        &self,
+        path: &SafeRelativeUtf8UnixPathBuf,
+    ) -> bool {
         self.resolve(path).0
     }
 
-    fn should_visit_directory(
+    pub(super) fn should_visit_directory(
         &self,
         path: &SafeRelativeUtf8UnixPathBuf,
     ) -> bool {
@@ -357,7 +363,9 @@ where
     Ok(())
 }
 
-fn is_path_exportable(relative_path: &SafeRelativeUtf8UnixPathBuf) -> bool {
+pub(super) fn is_path_exportable(
+    relative_path: &SafeRelativeUtf8UnixPathBuf,
+) -> bool {
     let path = relative_path.as_str();
 
     !NEVER_EXPORTABLE_PATH_PREFIXES.iter().any(|prefix| {
@@ -567,7 +575,7 @@ fn is_default_selected_export_candidate(
     })
 }
 
-fn pack_get_relative_path(
+pub(super) fn pack_get_relative_path(
     instance_path: &PathBuf,
     path: &PathBuf,
 ) -> crate::Result<SafeRelativeUtf8UnixPathBuf> {

@@ -1,25 +1,27 @@
 //! Exports an instance as a ready-to-run server: the mods a server needs,
 //! their configs, the mod loader's server launcher and start scripts.
 
-use super::export_mrpack::export_content;
+use super::export_mrpack::{
+    ExportSelection, export_content, is_path_exportable, pack_get_relative_path,
+};
 use super::{create_mrpack_json, get, get_full_path};
 use crate::pack::install_from::EnvType;
 use crate::state::content_store::{ReadableContent, content_file_path};
 use crate::state::instances::adapters::sqlite::content_rows;
-use crate::state::{ModLoader, SideType, State};
+use crate::state::{InstanceMetadata, ModLoader, SideType, State};
 use crate::util::fetch::{fetch, fetch_json};
 use crate::util::io::{self, IOError};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::fmt::Write as _;
+use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
-/// Folders copied into the server pack, besides `mods`. Everything else
-/// (worlds, resource packs, shaders, screenshots, client options) stays out.
+/// Folders selected for the server pack by default, besides `mods`. Worlds,
+/// resource packs, shaders, screenshots and client options stay out unless
+/// picked.
 const SERVER_FOLDERS: &[&str] = &[
     "config",
     "defaultconfigs",
@@ -29,14 +31,19 @@ const SERVER_FOLDERS: &[&str] = &[
     "datapacks",
 ];
 
-/// What the export put in, and which mods it left out.
+/// The paths selected when the export screen opens, as include and exclude
+/// rules like the modpack export uses: `mods` and the server folders, minus
+/// the mods Modrinth lists as client-only and disabled mods.
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct ServerPackSelection {
+    pub included: Vec<String>,
+    pub excluded: Vec<String>,
+}
+
+/// What the export put in.
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct ServerPackReport {
     pub mods_included: usize,
-    /// Mods Modrinth lists as client-only, which a server can't load.
-    pub client_only_mods: Vec<String>,
-    /// Mods not on Modrinth: included, but they may be client-only.
-    pub unknown_mods: Vec<String>,
 }
 
 enum Entry {
@@ -44,16 +51,96 @@ enum Entry {
     Bytes(Vec<u8>, bool),
 }
 
-/// Writes the server pack for `instance_id` as a zip to `export_path`.
+/// The instance with its mod loader version filled in the way launching
+/// resolves it, for instances that don't record one (like folders added by
+/// hand).
+async fn with_loader_version(
+    instance_id: &str,
+) -> crate::Result<InstanceMetadata> {
+    let mut metadata = get(instance_id).await?.ok_or_else(|| {
+        crate::ErrorKind::InputError("Unknown instance".to_string())
+    })?;
+    let content_set = &mut metadata.applied_content_set;
+    if content_set.loader != ModLoader::Vanilla {
+        let mut version = crate::launcher::get_loader_version_from_profile(
+            &content_set.game_version,
+            content_set.loader,
+            content_set.loader_version.as_deref(),
+        )
+        .await?;
+        if version.is_none() {
+            version = crate::launcher::get_loader_version_from_profile(
+                &content_set.game_version,
+                content_set.loader,
+                Some("stable"),
+            )
+            .await?;
+        }
+        content_set.loader_version =
+            Some(version.map(|version| version.id).ok_or_else(|| {
+                crate::ErrorKind::InputError(format!(
+                    "No {} version found for Minecraft {}",
+                    content_set.loader.as_meta_str(),
+                    content_set.game_version
+                ))
+            })?);
+    }
+    Ok(metadata)
+}
+
+/// The default selection for the server pack export screen.
+#[tracing::instrument]
+pub async fn server_pack_selection(
+    instance_id: &str,
+) -> crate::Result<ServerPackSelection> {
+    let state = State::get().await?;
+    crate::state::instances::commands::sync_content_files(instance_id, &state)
+        .await?;
+    let metadata = with_loader_version(instance_id).await?;
+    let instance_dir = get_full_path(instance_id).await?;
+
+    // Modrinth tells which mods are client-only.
+    let pack = create_mrpack_json(&metadata, "1.0.0".to_string(), None).await?;
+    let mut excluded = pack
+        .files
+        .iter()
+        .filter(|file| {
+            file.env.as_ref().and_then(|env| env.get(&EnvType::Server))
+                == Some(&SideType::Unsupported)
+        })
+        .map(|file| file.path.as_str().to_string())
+        .collect::<Vec<_>>();
+    if let Ok(mut mods) = io::read_dir(instance_dir.join("mods")).await {
+        while let Ok(Some(entry)) = mods.next_entry().await {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.ends_with(".disabled") {
+                excluded.push(format!("mods/{name}"));
+            }
+        }
+    }
+    excluded.sort();
+    excluded.dedup();
+
+    let included = std::iter::once("mods")
+        .chain(SERVER_FOLDERS.iter().copied())
+        .filter(|folder| instance_dir.join(folder).is_dir())
+        .map(str::to_string)
+        .collect();
+    Ok(ServerPackSelection { included, excluded })
+}
+
+/// Writes the server pack for `instance_id` as a zip to `export_path`: the
+/// selected files (include and exclude rules, like the modpack export), the
+/// mod loader's server launcher and start scripts.
 #[tracing::instrument]
 pub async fn export_server_pack(
     instance_id: &str,
     export_path: PathBuf,
+    included: Vec<String>,
+    excluded: Vec<String>,
 ) -> crate::Result<ServerPackReport> {
     let state = State::get().await?;
-    let metadata = get(instance_id).await?.ok_or_else(|| {
-        crate::ErrorKind::InputError("Unknown instance".to_string())
-    })?;
+    let metadata = with_loader_version(instance_id).await?;
     let instance_dir = get_full_path(instance_id).await?;
     if let Some(parent) = export_path.parent() {
         let parent = tokio::fs::canonicalize(parent).await?;
@@ -67,28 +154,7 @@ pub async fn export_server_pack(
         }
     }
 
-    let content_set = &metadata.applied_content_set;
-    let game_version = content_set.game_version.clone();
-    let loader = content_set.loader;
-    let loader_version = content_set.loader_version.clone();
-
-    // Modrinth tells which mods are client-only.
-    let pack = create_mrpack_json(&metadata, "1.0.0".to_string(), None).await?;
-    let known_mods = pack
-        .files
-        .iter()
-        .map(|file| file.path.as_str().to_string())
-        .collect::<HashSet<_>>();
-    let client_only = pack
-        .files
-        .iter()
-        .filter(|file| {
-            file.env.as_ref().and_then(|env| env.get(&EnvType::Server))
-                == Some(&SideType::Unsupported)
-        })
-        .map(|file| file.path.as_str().to_string())
-        .collect::<HashSet<_>>();
-
+    let selection = ExportSelection::new(included, excluded);
     let stored_files =
         content_rows::get_instance_files(instance_id, &state.pool)
             .await?
@@ -98,70 +164,62 @@ pub async fn export_server_pack(
 
     let mut report = ServerPackReport::default();
     let mut entries: Vec<(String, Entry)> = Vec::new();
-    for folder in std::iter::once("mods").chain(SERVER_FOLDERS.iter().copied())
-    {
-        let mut pending = vec![instance_dir.join(folder)];
-        while let Some(dir) = pending.pop() {
-            let Ok(mut read_dir) = io::read_dir(&dir).await else {
+    let mut pending = vec![instance_dir.clone()];
+    while let Some(dir) = pending.pop() {
+        let mut read_dir = io::read_dir(&dir).await?;
+        while let Some(entry) = read_dir
+            .next_entry()
+            .await
+            .map_err(|error| IOError::with_path(error, &dir))?
+        {
+            let path = entry.path();
+            let relative = pack_get_relative_path(&instance_dir, &path)?;
+            if !is_path_exportable(&relative) {
+                continue;
+            }
+            let file_type = entry
+                .file_type()
+                .await
+                .map_err(|error| IOError::with_path(error, &path))?;
+            if file_type.is_dir() {
+                if selection.should_visit_directory(&relative) {
+                    pending.push(path);
+                }
+                continue;
+            }
+            // Disabled mods can't load on a server either.
+            if !selection.is_included(&relative)
+                || relative.as_str().ends_with(".disabled")
+            {
+                continue;
+            }
+            let relative = relative.as_str().to_string();
+            if relative.starts_with("mods/")
+                && relative.ends_with(".jar")
+                && relative.matches('/').count() == 1
+            {
+                report.mods_included += 1;
+            }
+            let Some(content) = export_content(
+                &state,
+                stored_files.get(relative.as_str()),
+                &path,
+                file_type.is_symlink(),
+            )
+            .await?
+            else {
                 continue;
             };
-            while let Some(entry) = read_dir
-                .next_entry()
-                .await
-                .map_err(|error| IOError::with_path(error, &dir))?
-            {
-                let path = entry.path();
-                let file_type = entry
-                    .file_type()
-                    .await
-                    .map_err(|error| IOError::with_path(error, &path))?;
-                if file_type.is_dir() {
-                    pending.push(path);
-                    continue;
-                }
-                let relative = relative_path(&instance_dir, &path);
-                if folder == "mods" {
-                    // Only enabled jars directly in mods/.
-                    if !relative.ends_with(".jar")
-                        || relative.matches('/').count() != 1
-                    {
-                        continue;
-                    }
-                    let file_name =
-                        relative.trim_start_matches("mods/").to_string();
-                    if client_only.contains(&relative) {
-                        report.client_only_mods.push(file_name);
-                        continue;
-                    }
-                    if known_mods.contains(&relative) {
-                        report.mods_included += 1;
-                    } else {
-                        report.unknown_mods.push(file_name);
-                    }
-                }
-                let Some(content) = export_content(
-                    &state,
-                    stored_files.get(relative.as_str()),
-                    &path,
-                    file_type.is_symlink(),
-                )
-                .await?
-                else {
-                    continue;
-                };
-                entries.push((relative, Entry::Content(content)));
-            }
+            entries.push((relative, Entry::Content(content)));
         }
     }
-    report.mods_included += report.unknown_mods.len();
-    report.client_only_mods.sort();
-    report.unknown_mods.sort();
 
+    let content_set = &metadata.applied_content_set;
     let launcher = server_launcher(
         &state,
-        &game_version,
-        loader,
-        loader_version.as_deref(),
+        &content_set.game_version,
+        content_set.loader,
+        content_set.loader_version.as_deref(),
     )
     .await?;
     entries.push((
@@ -179,7 +237,7 @@ pub async fn export_server_pack(
     entries.push((
         "README.txt".to_string(),
         Entry::Bytes(
-            readme(&metadata.instance.name, &game_version, &report)
+            readme(&metadata.instance.name, &content_set.game_version, &report)
                 .into_bytes(),
             false,
         ),
@@ -188,15 +246,6 @@ pub async fn export_server_pack(
     tokio::task::spawn_blocking(move || write_zip(&export_path, entries))
         .await??;
     Ok(report)
-}
-
-fn relative_path(base: &Path, path: &Path) -> String {
-    path.strip_prefix(base)
-        .unwrap_or(path)
-        .components()
-        .map(|c| c.as_os_str().to_string_lossy())
-        .collect::<Vec<_>>()
-        .join("/")
 }
 
 fn write_zip(path: &Path, entries: Vec<(String, Entry)>) -> crate::Result<()> {
@@ -475,7 +524,7 @@ async fn vanilla_server_url(
 }
 
 fn readme(name: &str, game_version: &str, report: &ServerPackReport) -> String {
-    let mut text = format!(
+    format!(
         "{name} server (Minecraft {game_version})\n\
          Exported from Threadrinth.\n\n\
          1. Install Java (the version this Minecraft version needs).\n\
@@ -486,22 +535,7 @@ fn readme(name: &str, game_version: &str, report: &ServerPackReport) -> String {
             user_jvm_args.txt after the first start).\n\n\
          Mods included: {}\n",
         report.mods_included
-    );
-    if !report.client_only_mods.is_empty() {
-        text.push_str("\nLeft out because they only work on the client:\n");
-        for name in &report.client_only_mods {
-            let _ = writeln!(text, "  {name}");
-        }
-    }
-    if !report.unknown_mods.is_empty() {
-        text.push_str(
-            "\nNot on Modrinth, so included without checking (remove any that are client-only if the server won't start):\n",
-        );
-        for name in &report.unknown_mods {
-            let _ = writeln!(text, "  {name}");
-        }
-    }
-    text
+    )
 }
 
 #[cfg(test)]
@@ -509,24 +543,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn readme_lists_left_out_mods() {
-        let report = ServerPackReport {
-            mods_included: 3,
-            client_only_mods: vec!["sodium.jar".to_string()],
-            unknown_mods: vec!["custom.jar".to_string()],
-        };
+    fn readme_counts_mods() {
+        let report = ServerPackReport { mods_included: 3 };
         let text = readme("Pack", "1.21.1", &report);
+        assert!(text.contains("Pack server (Minecraft 1.21.1)"));
         assert!(text.contains("Mods included: 3"));
-        assert!(text.contains("  sodium.jar"));
-        assert!(text.contains("  custom.jar"));
-    }
-
-    #[test]
-    fn relative_paths_use_forward_slashes() {
-        let base = Path::new("/instances/pack");
-        assert_eq!(
-            relative_path(base, &base.join("config").join("a.toml")),
-            "config/a.toml"
-        );
     }
 }

@@ -9,6 +9,7 @@ import {
 	IssuesIcon,
 	Link2Icon,
 	MoreVerticalIcon,
+	MoveIcon,
 	NoSignalIcon,
 	PlayIcon,
 	SignalIcon,
@@ -73,18 +74,8 @@ const router = useRouter()
 const { addNotification } = injectNotificationManager()
 
 const emit = defineEmits<{
-	(
-		e:
-			| 'play'
-			| 'play-instance'
-			| 'update'
-			| 'stop'
-			| 'refresh'
-			| 'edit'
-			| 'delete'
-			| 'desync'
-			| 'transfer',
-	): void
+	(e: 'play' | 'play-instance' | 'update' | 'stop' | 'refresh' | 'edit' | 'delete' | 'desync'): void
+	(e: 'transfer', mode: 'copy' | 'move'): void
 	(e: 'open-folder', world: SingleplayerWorld): void
 }>()
 
@@ -202,6 +193,10 @@ const messages = defineMessages({
 	copyToInstance: {
 		id: 'instance.worlds.copy-to-instance',
 		defaultMessage: 'Copy to instance…',
+	},
+	moveToInstance: {
+		id: 'instance.worlds.move-to-instance',
+		defaultMessage: 'Move to instance…',
 	},
 	instanceLocked: {
 		id: 'instance.worlds.instance-locked',
@@ -403,7 +398,16 @@ const overflowOptions = computed((): ButtonMenuOption[] => [
 		shown: props.world.type === 'singleplayer' && !props.instanceId,
 		disabled: locked.value,
 		tooltip: locked.value ? formatMessage(messages.worldInUse) : undefined,
-		action: () => emit('transfer'),
+		action: () => emit('transfer', 'copy'),
+	},
+	{
+		id: 'move',
+		label: formatMessage(messages.moveToInstance),
+		icon: MoveIcon,
+		shown: props.world.type === 'singleplayer' && !props.instanceId,
+		disabled: locked.value,
+		tooltip: locked.value ? formatMessage(messages.worldInUse) : undefined,
+		action: () => emit('transfer', 'move'),
 	},
 	{
 		id: 'open-folder',

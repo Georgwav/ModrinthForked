@@ -1,3 +1,4 @@
+import { isCancelledError } from '@tanstack/vue-query'
 import type { Component } from 'vue'
 
 import { createContext } from '.'
@@ -60,6 +61,8 @@ export abstract class AbstractWebNotificationManager {
 	 * @deprecated You should use `addNotification` instead to provide a more human-readable error message to the user.
 	 */
 	handleError = (error: Error): void => {
+		// A query cancelled because its data is no longer needed isn't an error.
+		if (isCancelledError(error)) return
 		this.addNotification({
 			title: 'An error occurred',
 			text: error.message ?? error,

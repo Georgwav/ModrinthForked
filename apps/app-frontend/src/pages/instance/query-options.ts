@@ -124,6 +124,7 @@ export function instanceContentQueryOptions(
 export function instanceWorldsQueryOptions(instanceId: string) {
 	return queryOptions({
 		queryKey: instanceKeys.worlds(instanceId),
+		networkMode: 'always',
 		queryFn: () => refreshWorlds(instanceId),
 		staleTime: 0,
 	})

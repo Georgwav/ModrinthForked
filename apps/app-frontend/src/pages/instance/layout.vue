@@ -5,6 +5,11 @@
 			@contextmenu.prevent.stop="(event) => handleRightClick(event)"
 		>
 			<ExportModal v-if="!instance.quarantined" ref="exportModal" :instance="instance" />
+			<ServerPackExportModal
+				v-if="!instance.quarantined"
+				ref="serverPackExportModal"
+				:instance="instance"
+			/>
 			<ConfirmDeleteInstanceModal
 				ref="deleteConfirmModal"
 				:instances="selectedInstanceToDelete ? [selectedInstanceToDelete] : []"
@@ -50,7 +55,7 @@
 				@settings="() => settingsModal?.show()"
 				@open-folder="() => instance && showInstanceInFolder(instance.id)"
 				@export="() => !instance?.quarantined && exportModal?.show()"
-				@export-server-pack="() => instance && !instance.quarantined && exportServerPack(instance)"
+				@export-server-pack="() => !instance?.quarantined && serverPackExportModal?.show()"
 				@create-shortcut="() => createShortcut()"
 				@report="reportSharedInstance"
 			/>
@@ -119,6 +124,7 @@ import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 import ExportModal from '@/components/ui/ExportModal.vue'
 import ConfirmDeleteInstanceModal from '@/components/ui/modal/ConfirmDeleteInstanceModal.vue'
 import UpdateToPlayModal from '@/components/ui/modal/UpdateToPlayModal.vue'
+import ServerPackExportModal from '@/components/ui/ServerPackExportModal.vue'
 import SharedInstanceInstallModal from '@/components/ui/shared-instances/shared-instance-install-modal/index.vue'
 import SharedInstanceUpdateModal from '@/components/ui/shared-instances/SharedInstanceUpdateModal.vue'
 import {
@@ -128,7 +134,6 @@ import {
 import { useAppEvent } from '@/composables/use-app-event'
 import { useAppSettings } from '@/composables/use-app-settings.ts'
 import { handleSevereError } from '@/composables/use-error.js'
-import { useServerPackExport } from '@/composables/use-server-pack-export'
 import { useInstanceConsole } from '@/composables/useInstanceConsole'
 import { trackEvent } from '@/helpers/analytics'
 import { toError } from '@/helpers/errors'
@@ -364,7 +369,7 @@ const checkingSharedInstanceLaunch = ref(false)
 const subpagePending = ref(false)
 const stopping = ref(false)
 const exportModal = ref<InstanceType<typeof ExportModal>>()
-const exportServerPack = useServerPackExport()
+const serverPackExportModal = ref<InstanceType<typeof ServerPackExportModal>>()
 const updateToPlayModal = ref<InstanceType<typeof UpdateToPlayModal>>()
 const sharedInstanceUpdateModal = ref<InstanceType<typeof SharedInstanceUpdateModal>>()
 const sharedInstanceReportModal = ref<InstanceType<typeof SharedInstanceInstallModal>>()
