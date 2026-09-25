@@ -479,6 +479,51 @@ async fn folder_instances_work_with_launcher_features() {
     );
     println!("unrelated edits keep the folder icon: ok");
 
+    // A modpack instance without an icon of its own gets the modpack's icon;
+    // a custom icon still wins.
+    let linked = profiles.join("Linked Pack");
+    write(
+        &linked.join("instance.cfg"),
+        "[General]\nModrinthGameVersion=1.20.1\nModrinthLoader=vanilla\n",
+    );
+    api::refresh().await.unwrap();
+    let linked_id = instance_by_path("Linked Pack")
+        .await
+        .expect("imported")
+        .instance
+        .id;
+    let mut tx = state.pool.begin().await.unwrap();
+    crate::state::instances::adapters::sqlite::instance_rows::upsert_instance_link(
+        &linked_id,
+        &crate::state::InstanceLink::ModrinthModpack {
+            project_id: "1KVo5zza".to_string(),
+            version_id: "unknown".to_string(),
+        },
+        &mut tx,
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    api::refresh().await.unwrap();
+    let pack_icon = instance_by_path("Linked Pack")
+        .await
+        .unwrap()
+        .instance
+        .icon_path
+        .expect("the modpack's icon");
+    assert!(Path::new(&pack_icon).is_file());
+    assert!(linked.join("icon.png").is_file(), "saved into the folder");
+    write(&linked.join("icon.png"), &blue);
+    api::refresh().await.unwrap();
+    let custom = instance_by_path("Linked Pack")
+        .await
+        .unwrap()
+        .instance
+        .icon_path
+        .unwrap();
+    assert_eq!(std::fs::read(&custom).unwrap(), blue, "custom icon wins");
+    println!("modpack icon for instances without one: ok");
+
     // --- Install without Repair ----------------------------------------
     // A new import is queued for install, so Play works right away.
     super::scan_instances::QUEUE_INSTALLS
