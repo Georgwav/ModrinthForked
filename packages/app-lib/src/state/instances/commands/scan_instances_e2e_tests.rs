@@ -794,6 +794,7 @@ async fn folder_instances_work_with_launcher_features() {
         hosting::EditServer {
             eula_accepted: Some(true),
             port: Some(25601),
+            public_access: Some(hosting::PublicAccess::Auto),
             ..Default::default()
         },
     )
@@ -806,6 +807,18 @@ async fn folder_instances_work_with_launcher_features() {
             .contains(&("server-port".to_string(), "25601".to_string()))
     );
     run_server_until_ready(&fabric.id).await;
+    // No router offers UPnP here and playit.gg isn't linked: the server still
+    // runs, and says why it isn't public.
+    let status = hosting::server_status(&fabric.id);
+    assert!(status.public_address.is_none());
+    assert!(
+        status
+            .public_error
+            .as_deref()
+            .is_some_and(|error| error.contains("Link playit.gg")),
+        "{:?}",
+        status.public_error
+    );
     println!("hosting a Fabric server: ok");
 
     let legacy_selection = api::server_pack_selection(&legacy.instance.id)

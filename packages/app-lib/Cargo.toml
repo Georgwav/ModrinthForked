@@ -48,6 +48,7 @@ governor = { workspace = true }
 heck = { workspace = true }
 hickory-resolver = { workspace = true }
 httpdate = { workspace = true }
+igd-next = { workspace = true }
 image = { workspace = true, features = ["gif", "jpeg", "png", "webp"] }
 indicatif = { workspace = true, optional = true }
 itertools = { workspace = true }
@@ -61,6 +62,8 @@ paste = { workspace = true }
 path-util = { workspace = true }
 pathdiff = { workspace = true }
 phf = { workspace = true }
+playit-agent-core = { workspace = true }
+playit-api-client = { workspace = true }
 png = { workspace = true }
 postcard = { workspace = true, optional = true }
 postcard-bindgen = { workspace = true, features = ["generating", "std"], optional = true }

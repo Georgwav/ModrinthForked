@@ -1,6 +1,8 @@
 //! Running servers: starting and stopping them, their console and how much
 //! CPU and memory they use.
 
+use super::PublicAccess;
+use super::public::{self, PublicAddress};
 use super::setup::{java_command, platform_args_file, server_java};
 use super::{LaunchTarget, get_server, input, server_dir};
 use crate::util::io::{self, IOError};
@@ -58,6 +60,10 @@ pub struct ServerStatus {
     pub memory_bytes: Option<u64>,
     /// How the last run ended, when it's not running.
     pub exit_code: Option<i32>,
+    /// Where players outside this network join, when public access is on.
+    pub public_address: Option<PublicAddress>,
+    /// Why the server couldn't be made public.
+    pub public_error: Option<String>,
 }
 
 struct Session {
@@ -70,6 +76,8 @@ struct Session {
     players: BTreeSet<String>,
     exit_code: Option<i32>,
     system: Option<System>,
+    public: Option<PublicAddress>,
+    public_error: Option<String>,
 }
 
 impl Session {
@@ -84,6 +92,8 @@ impl Session {
             players: BTreeSet::new(),
             exit_code: None,
             system: None,
+            public: None,
+            public_error: None,
         }
     }
 
@@ -179,6 +189,8 @@ pub async fn start_server(id: &str) -> crate::Result<()> {
         s.started = Some(Utc::now());
         s.players.clear();
         s.exit_code = None;
+        s.public = None;
+        s.public_error = None;
         s.push(ConsoleStream::App, "Starting the server…".to_string());
     }
 
@@ -187,6 +199,33 @@ pub async fn start_server(id: &str) -> crate::Result<()> {
         let mut s = lock(&session);
         s.state = ServerState::Offline;
         s.push(ConsoleStream::App, format!("Could not start: {error}"));
+    } else if server.public_access == PublicAccess::Auto {
+        let session = session.clone();
+        let (id, port) = (server.id.clone(), server.port);
+        tokio::spawn(async move {
+            let result = public::open(&id, port).await;
+            let mut s = lock(&session);
+            match result {
+                Ok(address) => {
+                    s.push(
+                        ConsoleStream::App,
+                        format!("Players can join at {}", address.address),
+                    );
+                    if s.state == ServerState::Offline {
+                        // Stopped while opening; undo it.
+                        tokio::spawn(async move {
+                            public::close(&address, port).await;
+                        });
+                    } else {
+                        s.public = Some(address);
+                    }
+                }
+                Err(error) => {
+                    s.push(ConsoleStream::App, error.clone());
+                    s.public_error = Some(error);
+                }
+            }
+        });
     }
     result
 }
@@ -242,8 +281,13 @@ async fn spawn(
         tokio::spawn(read_lines(stderr, ConsoleStream::Error, session.clone()));
     }
     let session = session.clone();
+    let port = server.port;
     tokio::spawn(async move {
         let status = child.wait().await;
+        let public = lock(&session).public.take();
+        if let Some(public) = public {
+            public::close(&public, port).await;
+        }
         let mut s = lock(&session);
         s.state = ServerState::Offline;
         s.pid = None;
@@ -400,6 +444,8 @@ pub fn server_status(id: &str) -> ServerStatus {
         cpu_percent,
         memory_bytes,
         exit_code: s.exit_code,
+        public_address: s.public.clone(),
+        public_error: s.public_error.clone(),
     }
 }
 

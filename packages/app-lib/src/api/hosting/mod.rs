@@ -5,6 +5,7 @@
 
 mod process;
 mod properties;
+mod public;
 mod setup;
 
 pub use process::stop_all_servers;
@@ -13,6 +14,10 @@ pub use process::{
     send_command, server_console, server_status, start_server, stop_server,
 };
 pub use properties::{server_properties, set_server_properties};
+pub use public::{
+    PlayitLink, PublicAddress, PublicVia, playit_link_status,
+    start_playit_link, unlink_playit,
+};
 
 use crate::api::instance::{
     ServerPackSelection, collect_server_files, write_dir,
