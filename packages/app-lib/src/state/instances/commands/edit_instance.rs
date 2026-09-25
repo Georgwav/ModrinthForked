@@ -110,8 +110,10 @@ pub(crate) async fn edit_instance(
     patch: EditInstance,
     pool: &SqlitePool,
 ) -> crate::Result<Instance> {
+    let icon_changed = patch.icon_path.is_some();
     let instance = edit_instance_row(instance_id, patch, pool).await?;
-    super::scan_instances::sync_instance_cfg(instance_id, pool).await;
+    super::scan_instances::sync_instance_cfg(instance_id, pool, icon_changed)
+        .await;
 
     Ok(instance)
 }

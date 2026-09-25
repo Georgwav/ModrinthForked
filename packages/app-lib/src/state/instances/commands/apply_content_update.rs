@@ -431,10 +431,18 @@ async fn plan_bulk_update(
         .collect::<Vec<_>>();
     let planned_dependencies =
         dependency_closure(planned_versions, &content_set, state).await?;
+    // A project being updated is installed, even when its file has no
+    // content entry (like mods in a folder added outside the app); adding it
+    // again as a dependency would write the same file twice.
+    let updating = updates
+        .iter()
+        .map(|update| update.project_id.as_str())
+        .collect::<HashSet<_>>();
     let dependency_additions = planned_dependencies
         .values()
         .filter(|dependency| {
             !installed_by_project.contains_key(&dependency.project_id)
+                && !updating.contains(dependency.project_id.as_str())
         })
         .map(|dependency| PlannedDependencyInstall {
             version_id: dependency.version_id.clone(),

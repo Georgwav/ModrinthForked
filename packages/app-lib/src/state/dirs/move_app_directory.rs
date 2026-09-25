@@ -318,13 +318,12 @@ async fn rewrite_database_paths(
         let mut state: Value = serde_json::from_str(&job.state)?;
         rewrite_value(&mut state, mappings);
         let state = serde_json::to_string(&state)?;
-        sqlx::query!(
-            "UPDATE install_jobs SET state = jsonb(?) WHERE id = ?",
-            state,
-            job.id
-        )
-        .execute(&mut *tx)
-        .await?;
+        // Stored as text: install_jobs readers decode `state` as a string.
+        sqlx::query("UPDATE install_jobs SET state = ? WHERE id = ?")
+            .bind(state)
+            .bind(job.id)
+            .execute(&mut *tx)
+            .await?;
     }
     content_store::set_setting(
         &mut *tx,

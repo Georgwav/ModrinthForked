@@ -447,6 +447,35 @@ async fn folder_instances_work_with_launcher_features() {
     );
     println!("folder icon.png is the source of truth: ok");
 
+    // Other edits (like the ones a modpack install makes) keep the folder's
+    // icon, even while the row has none yet.
+    write(&profiles.join("Legacy/icon.png"), &blue);
+    crate::state::edit_instance(
+        &legacy.instance.id,
+        EditInstance {
+            name: Some("Legacy Renamed".to_string()),
+            ..EditInstance::default()
+        },
+        &state.pool,
+    )
+    .await
+    .unwrap();
+    assert!(
+        profiles.join("Legacy/icon.png").is_file(),
+        "an unrelated edit keeps the folder icon"
+    );
+    api::refresh().await.unwrap();
+    assert!(
+        instance_by_path("Legacy")
+            .await
+            .unwrap()
+            .instance
+            .icon_path
+            .is_some(),
+        "the folder icon becomes the icon"
+    );
+    println!("unrelated edits keep the folder icon: ok");
+
     // --- Install without Repair ----------------------------------------
     // A new import is queued for install, so Play works right away.
     super::scan_instances::QUEUE_INSTALLS
