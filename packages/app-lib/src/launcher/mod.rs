@@ -735,6 +735,10 @@ pub async fn install_minecraft_for_instance_id_with_reporter(
     repairing: bool,
     reporter: Option<InstallProgressReporter>,
 ) -> crate::Result<()> {
+    #[cfg(test)]
+    if crate::api::curseforge::e2e_tests::skip_game_install() {
+        return Ok(());
+    }
     let state = State::get().await?;
     let context =
         crate::state::instances::commands::get_instance_launch_context(

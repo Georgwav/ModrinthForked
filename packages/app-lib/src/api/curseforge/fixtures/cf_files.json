@@ -1,0 +1,141 @@
+{
+  "data": [
+    {
+      "id": 4712866,
+      "gameId": 432,
+      "modId": 238222,
+      "isAvailable": true,
+      "displayName": "jei-1.20.1-forge-15.2.0.27.jar",
+      "fileName": "jei-1.20.1-forge-15.2.0.27.jar",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [
+        { "value": "b0f5ae8a2d3ee2d0e0a4bd7a04ed7b0d6a13c6f1", "algo": 1 },
+        { "value": "3c1b3f5c6a0b2e9d8f7a6b5c4d3e2f10", "algo": 2 }
+      ],
+      "fileDate": "2023-08-24T01:25:39.127Z",
+      "fileLength": 1260121,
+      "downloadCount": 1000,
+      "fileSizeOnDisk": 3000000,
+      "downloadUrl": "https://edge.forgecdn.net/files/4712/866/jei-1.20.1-forge-15.2.0.27.jar",
+      "gameVersions": ["Forge", "1.20.1", "Client", "Server"],
+      "sortableGameVersions": [
+        {
+          "gameVersionName": "Forge",
+          "gameVersionPadded": "0",
+          "gameVersion": "",
+          "gameVersionReleaseDate": "2019-08-01T00:00:00Z",
+          "gameVersionTypeId": 68441
+        },
+        {
+          "gameVersionName": "1.20.1",
+          "gameVersionPadded": "0000000001.0000000020.0000000001",
+          "gameVersion": "1.20.1",
+          "gameVersionReleaseDate": "2023-06-12T14:26:44.567Z",
+          "gameVersionTypeId": 75125
+        }
+      ],
+      "dependencies": [],
+      "exposeAsAlternative": null,
+      "parentProjectFileId": null,
+      "alternateFileId": 0,
+      "isServerPack": false,
+      "serverPackFileId": null,
+      "isEarlyAccessContent": false,
+      "earlyAccessEndDate": null,
+      "fileFingerprint": 3920151042,
+      "modules": [{ "name": "META-INF", "fingerprint": 2279125412 }]
+    },
+    {
+      "id": 5846804,
+      "gameId": 432,
+      "modId": 238222,
+      "isAvailable": true,
+      "displayName": "jei-1.20.1-forge-15.20.0.105.jar",
+      "fileName": "jei-1.20.1-forge-15.20.0.105.jar",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [
+        { "value": "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "algo": 1 }
+      ],
+      "fileDate": "2024-10-28T20:14:02.93Z",
+      "fileLength": 1383516,
+      "downloadCount": 500,
+      "downloadUrl": "https://edge.forgecdn.net/files/5846/804/jei-1.20.1-forge-15.20.0.105.jar",
+      "gameVersions": ["1.20.1", "Forge", "NeoForge"],
+      "sortableGameVersions": [],
+      "dependencies": [
+        { "modId": 306612, "relationType": 3 },
+        { "modId": 1, "relationType": 2 }
+      ],
+      "isServerPack": false,
+      "fileFingerprint": 1
+    },
+    {
+      "id": 5846810,
+      "gameId": 432,
+      "modId": 238222,
+      "isAvailable": true,
+      "displayName": "jei-1.20.1-fabric-15.20.0.105.jar",
+      "fileName": "jei-1.20.1-fabric-15.20.0.105.jar",
+      "releaseType": 2,
+      "fileStatus": 4,
+      "hashes": [],
+      "fileDate": "2024-10-28T20:14:05.1Z",
+      "fileLength": 1300000,
+      "downloadCount": 500,
+      "downloadUrl": null,
+      "gameVersions": ["Fabric", "1.20.1"],
+      "sortableGameVersions": [],
+      "dependencies": [],
+      "isServerPack": false,
+      "fileFingerprint": 2
+    },
+    {
+      "id": 5900000,
+      "gameId": 432,
+      "modId": 238222,
+      "isAvailable": true,
+      "displayName": "Server pack",
+      "fileName": "server.zip",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [],
+      "fileDate": "2025-01-01T00:00:00Z",
+      "fileLength": 1,
+      "downloadCount": 1,
+      "downloadUrl": "https://edge.forgecdn.net/files/5900/0/server.zip",
+      "gameVersions": ["1.20.1", "Forge"],
+      "sortableGameVersions": [],
+      "dependencies": [],
+      "isServerPack": true,
+      "fileFingerprint": 3
+    },
+    {
+      "id": 4000000,
+      "gameId": 432,
+      "modId": 238222,
+      "isAvailable": true,
+      "displayName": "jei-1.19.2-forge-11.6.0.1016.jar",
+      "fileName": "jei-1.19.2-forge-11.6.0.1016.jar",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [],
+      "fileDate": "2025-02-01T00:00:00Z",
+      "fileLength": 1,
+      "downloadCount": 1,
+      "downloadUrl": "https://edge.forgecdn.net/files/4000/0/jei-1.19.2-forge-11.6.0.1016.jar",
+      "gameVersions": ["1.19.2", "Forge"],
+      "sortableGameVersions": [],
+      "dependencies": [],
+      "isServerPack": false,
+      "fileFingerprint": 4
+    }
+  ],
+  "pagination": {
+    "index": 0,
+    "pageSize": 50,
+    "resultCount": 5,
+    "totalCount": 5
+  }
+}

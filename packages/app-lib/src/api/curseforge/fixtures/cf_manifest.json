@@ -1,0 +1,23 @@
+{
+  "minecraft": {
+    "version": "1.20.1",
+    "modLoaders": [
+      { "id": "fabric-0.14.21", "primary": false },
+      { "id": "forge-47.2.0", "primary": true }
+    ]
+  },
+  "manifestType": "minecraftModpack",
+  "manifestVersion": 1,
+  "name": "Test Pack",
+  "version": "1.2.3",
+  "author": "someone",
+  "files": [
+    { "projectID": 238222, "fileID": 4712866, "required": true },
+    { "projectID": 238222, "fileID": 5846810, "required": true },
+    { "projectID": 1000, "fileID": 7000, "required": true },
+    { "projectID": 2000, "fileID": 8000, "required": true },
+    { "projectID": 3000, "fileID": 9000, "required": false },
+    { "projectID": 4000, "fileID": 99, "required": true }
+  ],
+  "overrides": "overrides"
+}

@@ -53,6 +53,11 @@ export default new createRouter({
 			component: () => import('@/pages/Browse.vue'),
 		},
 		{
+			path: '/curseforge',
+			name: 'CurseForge',
+			component: () => import('@/pages/CurseForge.vue'),
+		},
+		{
 			path: '/skins',
 			name: 'Skin selector',
 			component: () => import('@/pages/Skins.vue'),

@@ -1,0 +1,90 @@
+{
+  "data": [
+    {
+      "id": 7000,
+      "gameId": 432,
+      "modId": 1000,
+      "isAvailable": true,
+      "displayName": "Faithful 32x",
+      "fileName": "Faithful 32x - 1.20.1.zip",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [
+        { "value": "1111111111111111111111111111111111111111", "algo": 1 }
+      ],
+      "fileDate": "2023-07-01T00:00:00Z",
+      "fileLength": 5000000,
+      "downloadCount": 10,
+      "downloadUrl": "https://edge.forgecdn.net/files/7/0/Faithful 32x - 1.20.1.zip",
+      "gameVersions": ["1.20.1"],
+      "sortableGameVersions": [],
+      "dependencies": [],
+      "isServerPack": false,
+      "fileFingerprint": 5
+    },
+    {
+      "id": 8000,
+      "gameId": 432,
+      "modId": 2000,
+      "isAvailable": true,
+      "displayName": "Complementary Shaders",
+      "fileName": "ComplementaryShaders_v4.zip",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [
+        { "value": "2222222222222222222222222222222222222222", "algo": 1 }
+      ],
+      "fileDate": "2023-07-01T00:00:00Z",
+      "fileLength": 300000,
+      "downloadCount": 10,
+      "downloadUrl": "https://edge.forgecdn.net/files/8/0/ComplementaryShaders_v4.zip",
+      "gameVersions": ["1.20.1"],
+      "sortableGameVersions": [],
+      "dependencies": [],
+      "isServerPack": false,
+      "fileFingerprint": 6
+    },
+    {
+      "id": 4712866,
+      "gameId": 432,
+      "modId": 238222,
+      "isAvailable": true,
+      "displayName": "jei-1.20.1-forge-15.2.0.27.jar",
+      "fileName": "jei-1.20.1-forge-15.2.0.27.jar",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [
+        { "value": "b0f5ae8a2d3ee2d0e0a4bd7a04ed7b0d6a13c6f1", "algo": 1 }
+      ],
+      "fileDate": "2023-08-24T01:25:39.127Z",
+      "fileLength": 1260121,
+      "downloadCount": 1000,
+      "downloadUrl": "https://edge.forgecdn.net/files/4712/866/jei-1.20.1-forge-15.2.0.27.jar",
+      "gameVersions": ["Forge", "1.20.1"],
+      "sortableGameVersions": [],
+      "dependencies": [],
+      "isServerPack": false,
+      "fileFingerprint": 7
+    },
+    {
+      "id": 5846810,
+      "gameId": 432,
+      "modId": 238222,
+      "isAvailable": true,
+      "displayName": "jei-1.20.1-fabric-15.20.0.105.jar",
+      "fileName": "jei-1.20.1-fabric-15.20.0.105.jar",
+      "releaseType": 1,
+      "fileStatus": 4,
+      "hashes": [],
+      "fileDate": "2024-10-28T20:14:05.1Z",
+      "fileLength": 1300000,
+      "downloadCount": 500,
+      "downloadUrl": null,
+      "gameVersions": ["Fabric", "1.20.1"],
+      "sortableGameVersions": [],
+      "dependencies": [],
+      "isServerPack": false,
+      "fileFingerprint": 8
+    }
+  ]
+}

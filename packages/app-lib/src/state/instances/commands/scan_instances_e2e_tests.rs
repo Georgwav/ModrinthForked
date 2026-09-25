@@ -864,6 +864,9 @@ async fn folder_instances_work_with_launcher_features() {
     hosting::delete_server(&forge.id).await.unwrap();
     assert_eq!(hosting::list_servers().await.unwrap().len(), 1);
     println!("hosting a Forge server: ok");
+
+    // --- CurseForge tab: a Feed the Beast modpack as a new instance -------
+    crate::api::curseforge::e2e_tests::install_ftb_pack().await;
 }
 
 /// Starts a hosted server, waits until it's ready, runs `list` and stops it.

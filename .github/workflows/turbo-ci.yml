@@ -37,6 +37,9 @@ jobs:
       REDIS_URL: redis://127.0.0.1:7000,redis://127.0.0.1:7001,redis://127.0.0.1:7002,redis://127.0.0.1:7003,redis://127.0.0.1:7004,redis://127.0.0.1:7005
       # Avoid stack overflows in tests
       RUST_MIN_STACK: 134217728
+      # Lets the live CurseForge API test run; it skips itself without a key
+      # (e.g. on pull requests from forks).
+      CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
 
     steps:
       - name: Check out code

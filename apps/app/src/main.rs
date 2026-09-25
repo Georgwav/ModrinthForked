@@ -273,6 +273,7 @@ fn main() {
         .plugin(api::worlds::init())
         .plugin(api::threadrinth::init())
         .plugin(api::hosting::init())
+        .plugin(api::curseforge::init())
         .manage(PendingUpdateData::default())
         .invoke_handler(tauri::generate_handler![
             initialize_state,
