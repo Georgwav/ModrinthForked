@@ -11,13 +11,14 @@ use sqlx::SqlitePool;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 
-const MOVED_APP_DIRECTORIES: [&str; 6] = [
+const MOVED_APP_DIRECTORIES: [&str; 7] = [
     "store",
     "profiles",
     "meta",
     "caches",
     "icons",
     "synced-options",
+    crate::api::hosting::SERVERS_FOLDER,
 ];
 pub(crate) async fn relocate_tree(from: &Path, to: &Path) -> crate::Result<()> {
     if !fs::try_exists(from).await? {

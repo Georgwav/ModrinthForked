@@ -272,6 +272,8 @@ fn main() {
         .plugin(api::friends::init())
         .plugin(api::worlds::init())
         .plugin(api::threadrinth::init())
+        .plugin(api::hosting::init())
+        .plugin(api::curseforge::init())
         .manage(PendingUpdateData::default())
         .invoke_handler(tauri::generate_handler![
             initialize_state,
@@ -302,6 +304,13 @@ fn main() {
                 {
                     tracing::warn!(
                         "Failed to flush pending Minecraft skin change before exit: {error}"
+                    );
+                }
+
+                // Servers hosted from the app save and stop with it.
+                if matches!(&event, tauri::RunEvent::Exit) {
+                    tauri::async_runtime::block_on(
+                        theseus::hosting::stop_all_servers(),
                     );
                 }
 

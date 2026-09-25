@@ -180,6 +180,7 @@ import {
 	PlayIcon,
 	ReportIcon,
 	ServerIcon,
+	ServerStackIcon,
 	SettingsIcon,
 	StopCircleIcon,
 	TimerIcon,
@@ -220,6 +221,10 @@ const messages = defineMessages({
 	exportServerPack: {
 		id: 'instance.action.export-server-pack',
 		defaultMessage: 'Export server pack',
+	},
+	hostServer: {
+		id: 'instance.action.host-server',
+		defaultMessage: 'Host as server',
 	},
 	instanceSettings: {
 		id: 'instance.action.settings',
@@ -312,6 +317,7 @@ const emit = defineEmits<{
 	openFolder: []
 	export: []
 	exportServerPack: []
+	hostServer: []
 	createShortcut: []
 	report: [event?: MouseEvent]
 }>()
@@ -387,6 +393,12 @@ const moreActions = computed<ButtonMenuOption[]>(() => {
 				label: formatMessage(messages.exportServerPack),
 				icon: ServerIcon,
 				action: () => emit('exportServerPack'),
+			},
+			{
+				id: 'host-server',
+				label: formatMessage(messages.hostServer),
+				icon: ServerStackIcon,
+				action: () => emit('hostServer'),
 			},
 			{
 				id: 'create-shortcut',

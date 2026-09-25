@@ -1,0 +1,158 @@
+{
+  "synopsis": "FTB Skies is an immersive modpack that challenges you to survive, build and conquer obstacles on a unique floating island. With a perfect blend of magic and technology, quests, and custom events, the experience is unforgettable.",
+  "description": "![](https://cdn.feed-the-beast.com/packs/ftb-skies/ftb-skies-logo.png)\n\n*Come Fly with Me*\n\nFTB Skies is a modpack that offers a unique and immersive experience unlike anything you've ever experienced",
+  "art": [
+    {
+      "id": 1187,
+      "type": "square",
+      "updated": 1723151799,
+      "url": "https://apps.modpacks.ch/modpacks/art/99/FTB Skies 512x512.png",
+      "mirrors": [],
+      "sha1": "776727f20f2ac1a53328f1ea6b38c2c9c99980c5",
+      "size": 350401,
+      "width": 512,
+      "height": 512,
+      "compressed": true
+    },
+    {
+      "id": 1188,
+      "type": "splash",
+      "updated": 1723151799,
+      "url": "https://apps.modpacks.ch/modpacks/art/99/6BF776D6-56BE-46FB-8058-70E34B690AA7A.png",
+      "mirrors": [],
+      "sha1": "50e64bea6f7ddd5be645e2570f22da6788277489",
+      "size": 288026,
+      "width": 1920,
+      "height": 1080,
+      "compressed": true
+    }
+  ],
+  "links": [
+    {
+      "id": 127,
+      "name": "Issue Tracker",
+      "link": "https://github.com/FTBTeam/FTB-Modpack-Issues/issues",
+      "type": "issues"
+    }
+  ],
+  "authors": [
+    {
+      "id": 8,
+      "name": "FTB Team",
+      "type": "team",
+      "website": "",
+      "updated": 1585874706
+    }
+  ],
+  "versions": [
+    {
+      "creeperhostVersionId": 498048,
+      "specs": {
+        "id": 797,
+        "minimum": 4096,
+        "recommended": 6144
+      },
+      "targets": [
+        {
+          "version": "43.3.9",
+          "id": 9782,
+          "name": "forge",
+          "type": "modloader",
+          "updated": 0
+        },
+        {
+          "version": "1.19.2",
+          "id": 749,
+          "name": "minecraft",
+          "type": "game",
+          "updated": 0
+        },
+        {
+          "version": "17.0.7+7",
+          "id": 4738,
+          "name": "java",
+          "type": "runtime",
+          "updated": 1683215664
+        }
+      ],
+      "private": false,
+      "id": 11842,
+      "name": "1.5.1",
+      "type": "release",
+      "updated": 1713641825
+    },
+    {
+      "creeperhostVersionId": 524542,
+      "specs": {
+        "id": 879,
+        "minimum": 4096,
+        "recommended": 6144
+      },
+      "targets": [
+        {
+          "version": "43.4.2",
+          "id": 10130,
+          "name": "forge",
+          "type": "modloader",
+          "updated": 0
+        },
+        {
+          "version": "1.19.2",
+          "id": 749,
+          "name": "minecraft",
+          "type": "game",
+          "updated": 0
+        },
+        {
+          "version": "17.0.7+7",
+          "id": 4738,
+          "name": "java",
+          "type": "runtime",
+          "updated": 1683215664
+        }
+      ],
+      "private": false,
+      "id": 12254,
+      "name": "1.6.0",
+      "type": "release",
+      "updated": 1720744117
+    }
+  ],
+  "installs": 397289,
+  "plays": 2156235,
+  "tags": [
+    {
+      "id": 9,
+      "name": "FTB"
+    },
+    {
+      "id": 27,
+      "name": "Kitchen"
+    }
+  ],
+  "featured": false,
+  "refreshed": 1790353892,
+  "notification": "",
+  "rating": {
+    "id": -1,
+    "configured": false,
+    "verified": false,
+    "age": 7,
+    "gambling": false,
+    "frightening": true,
+    "alcoholdrugs": false,
+    "nuditysexual": false,
+    "sterotypeshate": false,
+    "language": false,
+    "violence": true
+  },
+  "status": "success",
+  "released": 1677671808,
+  "provider": "modpacks.ch",
+  "plays_14d": 0,
+  "private": false,
+  "id": 103,
+  "name": "FTB Skies",
+  "type": "beta",
+  "updated": 1677671808
+}

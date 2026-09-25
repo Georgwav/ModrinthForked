@@ -105,6 +105,8 @@
 		"ads:default",
 		"friends:default",
 		"worlds:default",
-		"threadrinth:default"
+		"threadrinth:default",
+		"hosting:default",
+		"curseforge:default"
 	]
 }

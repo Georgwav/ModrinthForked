@@ -265,12 +265,15 @@ async fn sync_folder_icons(
                     .filter(|path| path.is_file()),
                 _ => None,
             };
-            from_cfg.map(IconSource::Cached).or_else(|| {
+            match from_cfg.map(IconSource::Cached).or_else(|| {
                 modrinth_app
                     .get(&row.path)
                     .and_then(|instance| instance.icon.clone())
                     .map(IconSource::File)
-            })
+            }) {
+                Some(source) => Some(source),
+                None => linked_project_icon(&row.id, state).await,
+            }
         };
         let Some(source) = source else {
             continue;
@@ -282,6 +285,18 @@ async fn sync_folder_icons(
                 IconSource::File(path) => {
                     crate::api::instance::cache_icon_from_path(path, state)
                         .await?
+                }
+                IconSource::Url(url) => {
+                    let bytes = crate::util::fetch::fetch(
+                        url,
+                        None,
+                        None,
+                        None,
+                        &state.fetch_semaphore,
+                        &state.pool,
+                    )
+                    .await?;
+                    crate::api::instance::cache_icon(bytes, state).await?
                 }
             };
             // Saving the icon also writes it into the folder (see
@@ -312,6 +327,42 @@ enum IconSource {
     Cached(PathBuf),
     /// Any image, cached (and normalized) first.
     File(PathBuf),
+    /// The icon of the Modrinth project the instance was installed from.
+    Url(String),
+}
+
+/// The icon of the modpack (or server project) an instance is linked to, for
+/// instances without an icon of their own.
+async fn linked_project_icon(
+    instance_id: &str,
+    state: &State,
+) -> Option<IconSource> {
+    let link = instance_rows::get_instance_link(instance_id, &state.pool)
+        .await
+        .ok()?;
+    let project_id = match link {
+        InstanceLink::ModrinthModpack { project_id, .. }
+        | InstanceLink::ServerProject { project_id } => project_id,
+        InstanceLink::ServerProjectModpack {
+            content_project_id, ..
+        } => content_project_id,
+        InstanceLink::SharedInstance {
+            modpack_project_id, ..
+        } => modpack_project_id?,
+        _ => return None,
+    };
+    let project = crate::state::CachedEntry::get_project(
+        &project_id,
+        None,
+        &state.pool,
+        &state.api_semaphore,
+    )
+    .await
+    .map_err(|error| {
+        tracing::warn!("Could not look up project {project_id}: {error}");
+    })
+    .ok()??;
+    project.icon_url.map(IconSource::Url)
 }
 
 async fn same_file_content(a: &Path, b: &Path) -> bool {

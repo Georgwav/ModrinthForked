@@ -1,0 +1,128 @@
+{
+  "data": [
+    {
+      "id": 238222,
+      "gameId": 432,
+      "name": "Just Enough Items (JEI)",
+      "slug": "jei",
+      "links": {
+        "websiteUrl": "https://www.curseforge.com/minecraft/mc-mods/jei",
+        "wikiUrl": "",
+        "issuesUrl": "https://github.com/mezz/JustEnoughItems/issues",
+        "sourceUrl": "https://github.com/mezz/JustEnoughItems"
+      },
+      "summary": "View Items and Recipes",
+      "status": 4,
+      "downloadCount": 372145884.0,
+      "isFeatured": false,
+      "primaryCategoryId": 423,
+      "categories": [
+        {
+          "id": 423,
+          "gameId": 432,
+          "name": "Map and Information",
+          "slug": "map-information",
+          "url": "https://www.curseforge.com/minecraft/mc-mods/map-information",
+          "iconUrl": "https://media.forgecdn.net/avatars/6/38/635351497437388438.png",
+          "dateModified": "2014-05-08T17:42:23.74Z",
+          "isClass": false,
+          "classId": 6,
+          "parentCategoryId": 6
+        }
+      ],
+      "classId": 6,
+      "authors": [
+        {
+          "id": 32358,
+          "name": "mezz",
+          "url": "https://www.curseforge.com/members/17072262-mezz?username=mezz"
+        }
+      ],
+      "logo": {
+        "id": 29069,
+        "modId": 238222,
+        "title": "635838945588716414.jpeg",
+        "description": "",
+        "thumbnailUrl": "https://media.forgecdn.net/avatars/thumbnails/29/69/256/256/635838945588716414.jpeg",
+        "url": "https://media.forgecdn.net/avatars/29/69/635838945588716414.jpeg"
+      },
+      "screenshots": [],
+      "mainFileId": 5846804,
+      "latestFiles": [],
+      "latestFilesIndexes": [
+        {
+          "gameVersion": "1.20.1",
+          "fileId": 5846804,
+          "filename": "jei-1.20.1-forge-15.20.0.105.jar",
+          "releaseType": 1,
+          "gameVersionTypeId": 75125,
+          "modLoader": 1
+        },
+        {
+          "gameVersion": "1.20.1",
+          "fileId": 5846810,
+          "filename": "jei-1.20.1-fabric-15.20.0.105.jar",
+          "releaseType": 1,
+          "gameVersionTypeId": 75125,
+          "modLoader": 4
+        },
+        {
+          "gameVersion": "1.21.1",
+          "fileId": 6000000,
+          "filename": "jei-1.21.1-neoforge-19.21.0.247.jar",
+          "releaseType": 1,
+          "gameVersionTypeId": 77784,
+          "modLoader": 6
+        }
+      ],
+      "latestEarlyAccessFilesIndexes": [],
+      "dateCreated": "2015-11-23T18:54:05.623Z",
+      "dateModified": "2025-01-10T09:12:44.853Z",
+      "dateReleased": "2025-01-10T09:03:19.43Z",
+      "allowModDistribution": true,
+      "gamePopularityRank": 3,
+      "isAvailable": true,
+      "thumbsUpCount": 0,
+      "rating": null
+    },
+    {
+      "id": 459929,
+      "gameId": 432,
+      "name": "AE2WTLib",
+      "slug": "applied-energistics-2-wireless-terminals",
+      "links": {
+        "websiteUrl": "https://www.curseforge.com/minecraft/mc-mods/applied-energistics-2-wireless-terminals",
+        "wikiUrl": null,
+        "issuesUrl": null,
+        "sourceUrl": null
+      },
+      "summary": "Wireless terminals for AE2",
+      "status": 4,
+      "downloadCount": 1234,
+      "isFeatured": false,
+      "primaryCategoryId": 420,
+      "categories": [],
+      "classId": 6,
+      "authors": [],
+      "logo": null,
+      "screenshots": [],
+      "mainFileId": 4655495,
+      "latestFiles": [],
+      "latestFilesIndexes": [],
+      "latestEarlyAccessFilesIndexes": [],
+      "dateCreated": "2021-03-01T00:00:00Z",
+      "dateModified": "2023-07-23T00:00:00Z",
+      "dateReleased": "2023-07-23T00:00:00Z",
+      "allowModDistribution": null,
+      "gamePopularityRank": 900,
+      "isAvailable": true,
+      "thumbsUpCount": 0
+    }
+  ],
+  "pagination": {
+    "index": 20,
+    "pageSize": 2,
+    "resultCount": 2,
+    "totalCount": 25432
+  }
+}

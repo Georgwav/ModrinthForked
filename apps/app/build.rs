@@ -477,6 +477,51 @@ fn main() {
                     .default_permission(
                         DefaultPermissionRule::AllowAllCommands,
                     ),
+            )
+            .plugin(
+                "hosting",
+                InlinedPlugin::new()
+                    .commands(&[
+                        "hosting_list",
+                        "hosting_get",
+                        "hosting_create",
+                        "hosting_edit",
+                        "hosting_delete",
+                        "hosting_start",
+                        "hosting_stop",
+                        "hosting_kill",
+                        "hosting_command",
+                        "hosting_console",
+                        "hosting_status",
+                        "hosting_properties",
+                        "hosting_set_properties",
+                        "hosting_sync_mods",
+                        "hosting_folder",
+                        "playit_link_status",
+                        "playit_start_link",
+                        "playit_unlink",
+                    ])
+                    .default_permission(
+                        DefaultPermissionRule::AllowAllCommands,
+                    ),
+            )
+            .plugin(
+                "curseforge",
+                InlinedPlugin::new()
+                    .commands(&[
+                        "curseforge_status",
+                        "curseforge_search",
+                        "curseforge_project",
+                        "curseforge_files",
+                        "curseforge_install_mod",
+                        "curseforge_install_modpack",
+                        "ftb_search",
+                        "ftb_pack",
+                        "ftb_install_pack",
+                    ])
+                    .default_permission(
+                        DefaultPermissionRule::AllowAllCommands,
+                    ),
             ),
     )
     .expect("Failed to run tauri-build");

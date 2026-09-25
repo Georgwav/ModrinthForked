@@ -10,6 +10,7 @@
 				ref="serverPackExportModal"
 				:instance="instance"
 			/>
+			<HostServerModal v-if="!instance.quarantined" ref="hostServerModal" />
 			<ConfirmDeleteInstanceModal
 				ref="deleteConfirmModal"
 				:instances="selectedInstanceToDelete ? [selectedInstanceToDelete] : []"
@@ -56,6 +57,7 @@
 				@open-folder="() => instance && showInstanceInFolder(instance.id)"
 				@export="() => !instance?.quarantined && exportModal?.show()"
 				@export-server-pack="() => !instance?.quarantined && serverPackExportModal?.show()"
+				@host-server="() => instance && !instance.quarantined && hostServerModal?.show(instance)"
 				@create-shortcut="() => createShortcut()"
 				@report="reportSharedInstance"
 			/>
@@ -122,6 +124,7 @@ import { computed, type ComputedRef, onUnmounted, ref, shallowRef, watch } from 
 import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router'
 
 import ExportModal from '@/components/ui/ExportModal.vue'
+import HostServerModal from '@/components/ui/hosting/HostServerModal.vue'
 import ConfirmDeleteInstanceModal from '@/components/ui/modal/ConfirmDeleteInstanceModal.vue'
 import UpdateToPlayModal from '@/components/ui/modal/UpdateToPlayModal.vue'
 import ServerPackExportModal from '@/components/ui/ServerPackExportModal.vue'
@@ -370,6 +373,7 @@ const subpagePending = ref(false)
 const stopping = ref(false)
 const exportModal = ref<InstanceType<typeof ExportModal>>()
 const serverPackExportModal = ref<InstanceType<typeof ServerPackExportModal>>()
+const hostServerModal = ref<InstanceType<typeof HostServerModal>>()
 const updateToPlayModal = ref<InstanceType<typeof UpdateToPlayModal>>()
 const sharedInstanceUpdateModal = ref<InstanceType<typeof SharedInstanceUpdateModal>>()
 const sharedInstanceReportModal = ref<InstanceType<typeof SharedInstanceInstallModal>>()

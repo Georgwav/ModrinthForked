@@ -1,4 +1,5 @@
 use crate::State;
+use crate::api::curseforge::bundle::fetch_pack_content_file;
 use crate::api::instance::CONFIG_FILE_EXTENSIONS;
 use crate::api::instance::GameOptionsPackSource;
 use crate::event::emit::loading_try_for_each_concurrent;
@@ -17,9 +18,7 @@ use crate::state::instances::commands::{
 use crate::state::{
     CachedEntry, CachedFile, EditInstance, InstanceInstallStage, SideType,
 };
-use crate::util::fetch::{
-    DownloadMeta, DownloadReason, FetchProgressFn, fetch_content_file,
-};
+use crate::util::fetch::{DownloadMeta, DownloadReason, FetchProgressFn};
 use crate::util::io;
 use async_zip::base::read::seek::ZipFileReader as SeekZipFileReader;
 use async_zip::base::read::{WithEntry, ZipEntryReader};
@@ -878,7 +877,8 @@ pub(crate) async fn install_zipped_mrpack_files_with_reporter(
                 };
                 let progress =
                     &mut report_download_progress as &mut FetchProgressFn<'_>;
-                let file = match fetch_content_file(
+                // Threadrinth: CurseForge and FTB packs only have SHA-1s.
+                let file = match fetch_pack_content_file(
                     state,
                     &project
                         .downloads
@@ -889,6 +889,7 @@ pub(crate) async fn install_zipped_mrpack_files_with_reporter(
                         .hashes
                         .get(&PackFileHash::Sha512)
                         .map(String::as_str),
+                    project.hashes.get(&PackFileHash::Sha1).map(String::as_str),
                     Some(project_size),
                     Some(&content_context.download_meta),
                     Some(progress),

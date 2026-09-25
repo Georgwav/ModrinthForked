@@ -1,3 +1,4 @@
+mod acquire_by_sha1;
 mod acquire_content;
 mod cache;
 mod file_changes;

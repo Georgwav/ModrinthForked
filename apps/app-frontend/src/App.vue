@@ -14,6 +14,7 @@ import {
 	ChevronLeftIcon,
 	ChevronRightIcon,
 	CompassIcon,
+	CurseForgeIcon,
 	ImageIcon,
 	LogInIcon,
 	LogOutIcon,
@@ -22,6 +23,7 @@ import {
 	PlusIcon,
 	RefreshCwIcon,
 	RightArrowIcon,
+	ServerIcon,
 	ServerStackIcon,
 	SettingsIcon,
 	ShirtIcon,
@@ -2284,6 +2286,9 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			>
 				<CompassIcon />
 			</NavButton>
+			<NavButton v-tooltip.right="'CurseForge'" to="/curseforge">
+				<CurseForgeIcon />
+			</NavButton>
 			<NavButton
 				v-if="appSettings.showSkinSelectorInSidebar"
 				v-tooltip.right="formatMessage(appMessages.skinSelectorLabel)"
@@ -2309,6 +2314,13 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 				"
 			>
 				<ServerStackIcon />
+			</NavButton>
+			<NavButton
+				v-tooltip.right="'Host'"
+				to="/host"
+				:is-subpage="(r) => r.path.startsWith('/host/')"
+			>
+				<ServerIcon />
 			</NavButton>
 			<suspense>
 				<QuickInstanceSwitcher>

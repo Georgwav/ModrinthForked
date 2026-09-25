@@ -479,6 +479,51 @@ async fn folder_instances_work_with_launcher_features() {
     );
     println!("unrelated edits keep the folder icon: ok");
 
+    // A modpack instance without an icon of its own gets the modpack's icon;
+    // a custom icon still wins.
+    let linked = profiles.join("Linked Pack");
+    write(
+        &linked.join("instance.cfg"),
+        "[General]\nModrinthGameVersion=1.20.1\nModrinthLoader=vanilla\n",
+    );
+    api::refresh().await.unwrap();
+    let linked_id = instance_by_path("Linked Pack")
+        .await
+        .expect("imported")
+        .instance
+        .id;
+    let mut tx = state.pool.begin().await.unwrap();
+    crate::state::instances::adapters::sqlite::instance_rows::upsert_instance_link(
+        &linked_id,
+        &crate::state::InstanceLink::ModrinthModpack {
+            project_id: "1KVo5zza".to_string(),
+            version_id: "unknown".to_string(),
+        },
+        &mut tx,
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    api::refresh().await.unwrap();
+    let pack_icon = instance_by_path("Linked Pack")
+        .await
+        .unwrap()
+        .instance
+        .icon_path
+        .expect("the modpack's icon");
+    assert!(Path::new(&pack_icon).is_file());
+    assert!(linked.join("icon.png").is_file(), "saved into the folder");
+    write(&linked.join("icon.png"), &blue);
+    api::refresh().await.unwrap();
+    let custom = instance_by_path("Linked Pack")
+        .await
+        .unwrap()
+        .instance
+        .icon_path
+        .unwrap();
+    assert_eq!(std::fs::read(&custom).unwrap(), blue, "custom icon wins");
+    println!("modpack icon for instances without one: ok");
+
     // --- Install without Repair ----------------------------------------
     // A new import is queued for install, so Play works right away.
     super::scan_instances::QUEUE_INSTALLS
@@ -707,6 +752,171 @@ async fn folder_instances_work_with_launcher_features() {
         "moved in"
     );
     println!("copy and move worlds: ok");
+
+    // --- Hosting ----------------------------------------------------------
+    // A Fabric server built from an instance (client-only mods left out,
+    // with a copied world) and a Forge one (whose installer runs first) both
+    // start, answer a command and stop.
+    use crate::api::hosting;
+    let fabric_selection =
+        api::server_pack_selection(&shaders_id).await.unwrap();
+    let fabric = hosting::create_server(hosting::CreateServer {
+        instance_id: shaders_id.clone(),
+        name: "Shaders Server".to_string(),
+        included: fabric_selection.included,
+        excluded: fabric_selection.excluded,
+        world: hosting::WorldSource::Copy {
+            instance_id: shaders_id.clone(),
+            world: "World".to_string(),
+        },
+        memory_mb: Some(1024),
+        eula_accepted: false,
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        fabric.launch,
+        hosting::LaunchTarget::Jar {
+            path: "fabric-server-launch.jar".to_string()
+        }
+    );
+    let fabric_dir = hosting::server_dir(&fabric.id).await.unwrap();
+    assert!(fabric_dir.join("world/level.dat").is_file(), "world copied");
+    // The test world is only a stub level.dat; let the server make a new one.
+    std::fs::remove_dir_all(fabric_dir.join("world")).unwrap();
+    assert!(!fabric_dir.join("mods").join(OLD_SODIUM_FILE).exists());
+    assert!(
+        hosting::start_server(&fabric.id).await.is_err(),
+        "needs the EULA accepted"
+    );
+    hosting::edit_server(
+        &fabric.id,
+        hosting::EditServer {
+            eula_accepted: Some(true),
+            port: Some(25601),
+            public_access: Some(hosting::PublicAccess::Auto),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert!(
+        hosting::server_properties(&fabric.id)
+            .await
+            .unwrap()
+            .contains(&("server-port".to_string(), "25601".to_string()))
+    );
+    run_server_until_ready(&fabric.id).await;
+    // No router offers UPnP here and playit.gg isn't linked: the server still
+    // runs, and says why it isn't public.
+    let status = hosting::server_status(&fabric.id);
+    assert!(status.public_address.is_none());
+    assert!(
+        status
+            .public_error
+            .as_deref()
+            .is_some_and(|error| error.contains("Link playit.gg")),
+        "{:?}",
+        status.public_error
+    );
+    println!("hosting a Fabric server: ok");
+
+    let legacy_selection = api::server_pack_selection(&legacy.instance.id)
+        .await
+        .unwrap();
+    let forge = hosting::create_server(hosting::CreateServer {
+        instance_id: legacy.instance.id.clone(),
+        name: "Forge Server".to_string(),
+        included: legacy_selection.included,
+        excluded: legacy_selection.excluded,
+        world: hosting::WorldSource::New {
+            seed: Some("42".to_string()),
+        },
+        memory_mb: Some(1536),
+        eula_accepted: true,
+    })
+    .await
+    .unwrap();
+    assert!(
+        matches!(forge.launch, hosting::LaunchTarget::ArgsFile { .. }),
+        "{:?}",
+        forge.launch
+    );
+    hosting::edit_server(
+        &forge.id,
+        hosting::EditServer {
+            port: Some(25602),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    run_server_until_ready(&forge.id).await;
+    assert_eq!(
+        hosting::list_servers()
+            .await
+            .unwrap()
+            .iter()
+            .map(|server| server.name.as_str())
+            .collect::<Vec<_>>(),
+        ["Forge Server", "Shaders Server"]
+    );
+    hosting::delete_server(&forge.id).await.unwrap();
+    assert_eq!(hosting::list_servers().await.unwrap().len(), 1);
+    println!("hosting a Forge server: ok");
+
+    // --- CurseForge tab: a Feed the Beast modpack as a new instance -------
+    crate::api::curseforge::e2e_tests::install_ftb_pack().await;
+}
+
+/// Starts a hosted server, waits until it's ready, runs `list` and stops it.
+async fn run_server_until_ready(id: &str) {
+    use crate::api::hosting::{self, ServerState};
+    hosting::start_server(id).await.unwrap();
+    let mut ready = false;
+    for _ in 0..(10 * 600) {
+        let status = hosting::server_status(id);
+        if status.state == ServerState::Running {
+            ready = true;
+            break;
+        }
+        if status.state == ServerState::Offline {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    let console = |id: &str| {
+        hosting::server_console(id, None)
+            .into_iter()
+            .map(|line| line.text)
+            .collect::<Vec<_>>()
+    };
+    assert!(ready, "server ready:\n{}", console(id).join("\n"));
+    let status = hosting::server_status(id);
+    assert!(status.memory_bytes.is_some_and(|bytes| bytes > 0));
+    hosting::send_command(id, "/list").await.unwrap();
+    let mut listed = false;
+    for _ in 0..100 {
+        if console(id)
+            .iter()
+            .any(|line| line.contains("players online"))
+        {
+            listed = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    assert!(listed, "list answered:\n{}", console(id).join("\n"));
+    hosting::stop_server(id).await.unwrap();
+    for _ in 0..600 {
+        if hosting::server_status(id).state == ServerState::Offline {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    let status = hosting::server_status(id);
+    assert_eq!(status.state, ServerState::Offline);
+    assert_eq!(status.exit_code, Some(0), "{}", console(id).join("\n"));
 }
 
 fn copy_dir(from: &Path, to: &Path) {
