@@ -174,7 +174,15 @@ type InputValue = string | number | undefined
 const GAMEMODES = ['survival', 'creative', 'adventure', 'spectator']
 const DIFFICULTIES = ['peaceful', 'easy', 'normal', 'hard']
 
-const id = computed(() => String(route.params.id))
+// Follows the route only while it is this page, so leaving it doesn't ask
+// for a server named "undefined".
+const id = ref(String(route.params.id))
+watch(
+	() => route.params.id,
+	(value) => {
+		if (route.name === 'HostServer' && typeof value === 'string') id.value = value
+	},
+)
 const server = ref<HostedServer>()
 const status = ref<ServerStatus>()
 const lines = ref<ConsoleLine[]>([])

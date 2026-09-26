@@ -2,6 +2,13 @@
 
 Each release's GitHub description is taken from its section here (see `scripts/release-notes.py`).
 
+## 0.21.9
+
+- Fixed playit.gg tunnels ("failed to parse body"): they use playit.gg's current way of creating tunnels.
+- A server's CPU usage is shown out of the whole CPU, not per core (no more 500%).
+- Fixed "Unknown server: undefined" when leaving a server's page.
+- Fixed an error about a missing project id when leaving a Feed the Beast or CurseForge project page.
+
 ## 0.21.8
 
 - The CurseForge tab looks and works like Discover, with tabs for Modpacks, FTB Modpacks, Mods, Resource Packs, Data Packs and Shaders, filters, sorting and pages.
